@@ -218,6 +218,7 @@ class EmulatorActivity : AppCompatActivity() {
         binding.surface.scalingMode = settings.scalingMode
         binding.surface.scanlines = settings.scanlines
         binding.surface.smoothing = settings.smoothing
+        binding.surface.monitor = settings.monitor
         binding.overlay.opacity = settings.overlayOpacity
         binding.overlay.scale = settings.overlayScale
         binding.overlay.haptic = settings.hapticFeedback
@@ -282,6 +283,7 @@ class EmulatorActivity : AppCompatActivity() {
         binding.keyboard.releaseAll()
         hideSystemKeyboard()
         s.flushDisk(library)
+        saveThumbnail(s)
         // Keep a recovery point in case the process is killed in the background.
         runCatching { library.autoSaveFile().writeBytes(s.emulator.saveState()) }
     }
@@ -314,6 +316,16 @@ class EmulatorActivity : AppCompatActivity() {
                 ) + (s.emulator.tapeStatus()?.let { t -> "\nTAPE %s %.0f/%.0f s %s%s".format(java.util.Locale.US, t.name.take(24), t.positionSeconds, t.lengthSeconds, if (t.moving) "playing" else "stopped", if (s.tapeTurbo) " turbo" else "") } ?: "")
             }
             handler.postDelayed(this, 500)
+        }
+    }
+
+    /** Keeps a small picture of the current screen for the library list. */
+    private fun saveThumbnail(s: EmulatorSession) {
+        val entry = s.currentEntry ?: return
+        val bmp = binding.surface.lastFrameBitmap() ?: return
+        runCatching {
+            val scaled = android.graphics.Bitmap.createScaledBitmap(bmp, 192, 136, true)
+            library.thumbFile(entry).outputStream().use { scaled.compress(android.graphics.Bitmap.CompressFormat.PNG, 90, it) }
         }
     }
 
@@ -430,6 +442,7 @@ class EmulatorActivity : AppCompatActivity() {
             getString(R.string.menu_eject_disk),
             getString(R.string.menu_disk_files),
             getString(R.string.menu_rewind_tape),
+            getString(R.string.menu_poke),
             getString(R.string.menu_reset),
             getString(R.string.menu_overlay_profile),
             getString(R.string.menu_edit_overlay),
@@ -451,18 +464,52 @@ class EmulatorActivity : AppCompatActivity() {
                     6 -> { s.flushDisk(library); s.emulator.ejectDisk(0); s.currentEntry = null; toast(R.string.toast_disk_ejected); s.resume() }
                     7 -> showDiskFiles()
                     8 -> { rewindTape(); s.resume() }
-                    9 -> confirmReset()
-                    10 -> chooseOverlayProfile()
-                    11 -> { binding.overlay.editMode = true; toast(R.string.toast_edit_overlay); s.resume() }
-                    12 -> chooseOrientation()
-                    13 -> { settings.muted = !settings.muted; s.applySettings(); s.resume() }
-                    14 -> startActivity(Intent(this, SettingsActivity::class.java))
-                    15 -> quit()
+                    9 -> showPokeDialog()
+                    10 -> confirmReset()
+                    11 -> chooseOverlayProfile()
+                    12 -> { binding.overlay.editMode = true; toast(R.string.toast_edit_overlay); s.resume() }
+                    13 -> chooseOrientation()
+                    14 -> { settings.muted = !settings.muted; s.applySettings(); s.resume() }
+                    15 -> startActivity(Intent(this, SettingsActivity::class.java))
+                    16 -> quit()
                 }
             }
             .setOnCancelListener { s.resume() }
             .show()
     }
+
+    /** POKE address,value (cheats): "&A000,255", "40960 255", "A000:FF"; several separated by ";". */
+    private fun showPokeDialog() {
+        val s = session ?: return
+        val edit = android.widget.EditText(this).apply {
+            hint = "&A000,255 ; 40961,0"
+            inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
+            setText(settings.lastPoke)
+        }
+        AlertDialog.Builder(this)
+            .setTitle(R.string.menu_poke)
+            .setMessage(R.string.poke_hint)
+            .setView(edit)
+            .setPositiveButton(android.R.string.ok) { _, _ ->
+                val text = edit.text.toString()
+                settings.lastPoke = text
+                var applied = 0
+                for (item in text.split(';', '\n')) {
+                    val m = Regex("""\s*(&|0x|#)?([0-9A-Fa-f]+)\s*[,: ]\s*(&|0x|#)?([0-9A-Fa-f]+)\s*""").matchEntire(item) ?: continue
+                    val addr = parseNumber(m.groupValues[1], m.groupValues[2]) ?: continue
+                    val value = parseNumber(m.groupValues[3], m.groupValues[4]) ?: continue
+                    if (addr in 0..0xFFFF && value in 0..255) { s.emulator.pokeRam(addr, value); applied++ }
+                }
+                Toast.makeText(this, getString(R.string.toast_pokes_applied, applied), Toast.LENGTH_SHORT).show()
+                s.resume()
+            }
+            .setNegativeButton(android.R.string.cancel) { _, _ -> s.resume() }
+            .setOnCancelListener { s.resume() }
+            .show()
+    }
+
+    private fun parseNumber(prefix: String, digits: String): Int? =
+        if (prefix.isNotEmpty()) digits.toIntOrNull(16) else digits.toIntOrNull()
 
     private fun rewindTape() {
         val s = session ?: return

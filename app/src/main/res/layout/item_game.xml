@@ -10,6 +10,15 @@
     android:paddingEnd="8dp"
     android:paddingBottom="10dp">
 
+    <ImageView
+        android:id="@+id/thumb"
+        android:layout_width="72dp"
+        android:layout_height="50dp"
+        android:background="@color/cpc_blue_dark"
+        android:contentDescription="@null"
+        android:scaleType="fitCenter"
+        android:visibility="gone" />
+
     <TextView
         android:id="@+id/badge"
         android:layout_width="40dp"

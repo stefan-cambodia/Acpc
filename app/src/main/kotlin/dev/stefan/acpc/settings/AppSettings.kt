@@ -31,6 +31,8 @@ class AppSettings(context: Context) {
     val scalingMode: ScalingMode
         get() = runCatching { ScalingMode.valueOf(prefs.getString(KEY_SCALING, ScalingMode.FIT.name)!!) }.getOrDefault(ScalingMode.FIT)
     val scanlines: Boolean get() = prefs.getBoolean(KEY_SCANLINES, false)
+    val monitor: Monitor
+        get() = runCatching { Monitor.valueOf(prefs.getString(KEY_MONITOR, Monitor.COLOUR.name)!!) }.getOrDefault(Monitor.COLOUR)
     val smoothing: Boolean get() = prefs.getBoolean(KEY_SMOOTHING, false)
 
     val autoStart: Boolean get() = prefs.getBoolean(KEY_AUTOSTART, true)
@@ -54,6 +56,11 @@ class AppSettings(context: Context) {
         get() = runCatching { Orientation.valueOf(prefs.getString(KEY_ORIENTATION, Orientation.AUTO.name)!!) }.getOrDefault(Orientation.AUTO)
         set(v) = prefs.edit().putString(KEY_ORIENTATION, v.name).apply()
 
+    /** Last POKE line entered (kept so a cheat can be re-applied after a reset). */
+    var lastPoke: String
+        get() = prefs.getString(KEY_LAST_POKE, "") ?: ""
+        set(v) = prefs.edit().putString(KEY_LAST_POKE, v).apply()
+
     /** Last remote server or file URL entered in the "remote server" dialog. */
     var lastRemoteUrl: String
         get() = prefs.getString(KEY_LAST_REMOTE_URL, DEFAULT_REMOTE_URL) ?: DEFAULT_REMOTE_URL
@@ -73,6 +80,9 @@ class AppSettings(context: Context) {
 
     enum class ScalingMode { FIT, INTEGER, STRETCH, PIXEL_PERFECT }
 
+    /** CTM644 colour monitor, GT65 green screen, or a grey rendering. */
+    enum class Monitor { COLOUR, GREEN, GREY }
+
     /**
      * AUTO follows the sensor even when the system auto-rotate is locked (like
      * most games); SYSTEM honours the lock; the other two are fixed.
@@ -88,6 +98,7 @@ class AppSettings(context: Context) {
         const val KEY_AUDIO_LATENCY = "audio_latency"
         const val KEY_SCALING = "scaling_mode"
         const val KEY_SCANLINES = "scanlines"
+        const val KEY_MONITOR = "monitor"
         const val KEY_SMOOTHING = "smoothing"
         const val KEY_AUTOSTART = "auto_start"
         const val KEY_FAST_DISC = "fast_disc"
@@ -104,6 +115,7 @@ class AppSettings(context: Context) {
         const val KEY_OVERLAY_LAYOUTS = "overlay_layouts"
         const val KEY_ORIENTATION = "screen_orientation"
         const val KEY_LAST_REMOTE_URL = "last_remote_url"
+        const val KEY_LAST_POKE = "last_poke"
 
         /** A large public collection of CPC discs (zipped DSK files), browsable in the app. */
         const val DEFAULT_REMOTE_URL = "https://archive.org/download/AmstradCPCGameCollectionByGhostware"

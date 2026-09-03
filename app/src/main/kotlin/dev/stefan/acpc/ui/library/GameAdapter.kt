@@ -12,6 +12,7 @@ import java.text.DateFormat
 import java.util.Date
 
 class GameAdapter(
+    private val thumbFile: (GameEntry) -> java.io.File,
     private val onClick: (GameEntry) -> Unit,
     private val onLongClick: (GameEntry, View) -> Unit,
     private val onFavorite: (GameEntry) -> Unit,
@@ -41,6 +42,15 @@ class GameAdapter(
         fun bind(entry: GameEntry) {
             b.title.text = entry.title
             b.badge.text = when { entry.isSnapshot -> "SNA"; entry.isTape -> "CDT"; else -> "DSK" }
+            val thumb = thumbFile(entry)
+            if (thumb.exists()) {
+                b.thumb.setImageBitmap(android.graphics.BitmapFactory.decodeFile(thumb.path))
+                b.thumb.visibility = View.VISIBLE
+                b.badge.visibility = View.GONE
+            } else {
+                b.thumb.visibility = View.GONE
+                b.badge.visibility = View.VISIBLE
+            }
             val ctx = b.root.context
             val played = if (entry.lastPlayed > 0) DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(entry.lastPlayed)) else ctx.getString(R.string.never_played)
             b.subtitle.text = ctx.getString(R.string.game_subtitle, entry.fileName.substringAfter('_'), entry.size / 1024, played)

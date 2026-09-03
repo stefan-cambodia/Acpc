@@ -44,6 +44,16 @@
         <item>LANDSCAPE</item>
         <item>PORTRAIT</item>
     </string-array>
+    <string-array name="monitor_entries">
+        <item>@string/monitor_colour</item>
+        <item>@string/monitor_green</item>
+        <item>@string/monitor_grey</item>
+    </string-array>
+    <string-array name="monitor_values">
+        <item>COLOUR</item>
+        <item>GREEN</item>
+        <item>GREY</item>
+    </string-array>
     <string-array name="scaling_entries">
         <item>@string/scaling_fit</item>
         <item>@string/scaling_integer</item>

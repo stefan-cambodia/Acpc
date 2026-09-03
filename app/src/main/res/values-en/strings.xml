@@ -97,6 +97,13 @@
     <string name="menu_insert_disk">Insert a DSK…</string>
     <string name="menu_eject_disk">Eject disc</string>
     <string name="menu_disk_files">Files on disc / run</string>
+    <string name="menu_poke">POKE (cheats)…</string>
+    <string name="poke_hint">Address,value (decimal, or hexadecimal with &amp;). Several POKEs separated by ; — the line is remembered.</string>
+    <string name="toast_pokes_applied">%1$d POKE(s) applied</string>
+    <string name="pref_monitor_title">Monitor</string>
+    <string name="monitor_colour">Colour (CTM644)</string>
+    <string name="monitor_green">Green (GT65)</string>
+    <string name="monitor_grey">Greyscale</string>
     <string name="menu_reset">Reset the CPC</string>
     <string name="menu_system_keyboard">Android keyboard (text entry)</string>
     <string name="toast_system_keyboard">Typed text is sent to the CPC. Long-press the keyboard button to reopen it.</string>

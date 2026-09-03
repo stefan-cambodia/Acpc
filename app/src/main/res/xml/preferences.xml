@@ -60,6 +60,13 @@
             android:entryValues="@array/scaling_values"
             android:defaultValue="FIT"
             android:summary="%s" />
+        <ListPreference
+            android:key="monitor"
+            android:title="@string/pref_monitor_title"
+            android:entries="@array/monitor_entries"
+            android:entryValues="@array/monitor_values"
+            android:defaultValue="COLOUR"
+            android:summary="%s" />
         <SwitchPreferenceCompat
             android:key="scanlines"
             android:title="@string/pref_scanlines_title"

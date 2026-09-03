@@ -62,6 +62,7 @@ class LibraryActivity : AppCompatActivity() {
         settings = AppSettings(this)
 
         adapter = GameAdapter(
+            thumbFile = { entry -> library.thumbFile(entry) },
             onClick = { entry -> GameLauncher.launch(this, entry, library) },
             onLongClick = { entry, view -> showEntryMenu(entry, view) },
             onFavorite = { entry -> entry.favorite = !entry.favorite; library.update(entry); refresh() },

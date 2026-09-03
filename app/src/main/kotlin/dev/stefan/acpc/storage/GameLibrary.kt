@@ -67,6 +67,10 @@ class GameLibrary(context: Context) {
     private val app = context.applicationContext
     val disksDir: File = File(app.filesDir, "disks").apply { mkdirs() }
     val statesDir: File = File(app.filesDir, "states").apply { mkdirs() }
+    val thumbsDir: File = File(app.filesDir, "thumbs").apply { mkdirs() }
+
+    /** Small PNG of the last screen seen for the entry (written when the emulator pauses). */
+    fun thumbFile(entry: GameEntry): File = File(thumbsDir, entry.id + ".png")
     private val indexFile = File(app.filesDir, "library.json")
     private val entries = LinkedHashMap<String, GameEntry>()
 
@@ -115,6 +119,7 @@ class GameLibrary(context: Context) {
         val e = entries.remove(id) ?: return
         File(disksDir, e.fileName).delete()
         statesDir.listFiles { f -> f.name.startsWith(e.id + "_") }?.forEach { it.delete() }
+        thumbFile(e).delete()
         save()
     }
 

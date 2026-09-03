@@ -30,6 +30,24 @@ class CpcSurfaceView @JvmOverloads constructor(context: Context, attrs: Attribut
     @Volatile var scanlines: Boolean = false
     @Volatile var smoothing: Boolean = false
 
+    /** Colour, green phosphor (GT65) or grey monitor, applied as a colour matrix when drawing. */
+    var monitor: AppSettings.Monitor = AppSettings.Monitor.COLOUR
+        set(v) {
+            field = v
+            paint.colorFilter = when (v) {
+                AppSettings.Monitor.COLOUR -> null
+                AppSettings.Monitor.GREEN -> android.graphics.ColorMatrixColorFilter(floatArrayOf(
+                    0f, 0f, 0f, 0f, 0f,
+                    0.299f * 1.15f, 0.587f * 1.15f, 0.114f * 1.15f, 0f, 0f,
+                    0f, 0f, 0f, 0f, 0f,
+                    0f, 0f, 0f, 1f, 0f))
+                AppSettings.Monitor.GREY -> android.graphics.ColorMatrixColorFilter(android.graphics.ColorMatrix().apply { setSaturation(0f) })
+            }
+        }
+
+    /** A copy of the last frame drawn, for thumbnails. */
+    fun lastFrameBitmap(): Bitmap? = synchronized(lock) { bitmap?.copy(Bitmap.Config.ARGB_8888, false) }
+
     private var bitmap: Bitmap? = null
     private var bitmapWidth = 0
     private var bitmapHeight = 0

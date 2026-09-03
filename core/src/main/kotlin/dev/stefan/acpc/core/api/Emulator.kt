@@ -103,6 +103,9 @@ interface Emulator {
 
     /** Raw 64 KB of base RAM (for tests and debugging tools). */
     fun peekRam(address: Int): Int
+
+    /** Writes a byte into the RAM currently mapped at [address] (POKE cheats). */
+    fun pokeRam(address: Int, value: Int)
 }
 
 class TapeStatus(val name: String, val positionSeconds: Float, val lengthSeconds: Float, val moving: Boolean, val atEnd: Boolean)

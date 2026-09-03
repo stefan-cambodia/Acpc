@@ -106,6 +106,7 @@ class CpcEmulator(
         w.ints("PPI ", machine.ppi.exportState())
         w.ints("KEYS", machine.keyboard.snapshot())
         machine.fdc.exportState(w)
+        machine.tape?.let { w.longs("TAPE", longArrayOf(it.position)) }
         w.toByteArray()
     }
 
@@ -134,6 +135,7 @@ class CpcEmulator(
             machine.keyboard.restore(r.ints("KEYS"))
             machine.fdc.importState(r)
             machine.restoreClocks(clocks[0], clocks[1])
+            if (r.has("TAPE")) machine.tape?.let { t -> t.lastCyclesHint = machine.cpu.cycles; t.seek(r.longs("TAPE")[0]) }
         } catch (e: InvalidStateException) {
             throw e
         } catch (e: Exception) {
@@ -173,6 +175,8 @@ class CpcEmulator(
     }
 
     override fun peekRam(address: Int): Int = machine.memory.videoRead(address)
+
+    override fun pokeRam(address: Int, value: Int) = synchronized(lock) { machine.memory.write(address and 0xFFFF, value and 0xFF) }
 
     companion object {
         /** Factory matching the `createMachine(model)` entry point of the core API. */
