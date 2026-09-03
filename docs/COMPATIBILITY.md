@@ -9,7 +9,9 @@ the real machine, so big games need 40 to 90 s to load at real speed (the
 "Fast disc drive" setting removes those delays).
 
 Discs come from the archive.org collection reachable from the app, unless
-noted. Run with:
+noted. Loads were also checked with an instruction trace where a game looked
+stuck (`CpcMachine.instructionHook` lets a test observe every instruction).
+Run with:
 
 ```
 ./gradlew :core:test -PslowTests --tests '*CompatibilityRunTest*' \
@@ -42,7 +44,7 @@ noted. Run with:
 | Boulder Dash (bdash) | "Loading..." | long load |
 | Columns CPC | menu | |
 | Cyber Power | title, "press space" | |
-| Jet Set Willy+ (jswplus) | blank blue screen | to be checked: loader still running or hang |
+| Jet Set Willy+ (jswplus) | crashes after loading | CPC Plus program: writes the ASIC registers (&6800-&6805) and uses RMR2 (gate array values with bit 5 set); the Plus is not emulated |
 | Robotron 2084 | title screen | |
 | Sean McManus collection 2024 | menu | |
 | Space: Above and Beyond | title | |

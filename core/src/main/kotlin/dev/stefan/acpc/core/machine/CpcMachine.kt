@@ -50,6 +50,12 @@ class CpcMachine(
     val keyTyper = KeyTyper(keyboard)
     val fdc = Upd765()
 
+    /**
+     * Debugging aid: called before every instruction while set (tests,
+     * tracing tools). Null in normal operation, which keeps the fast loop.
+     */
+    @Volatile var instructionHook: ((CpcMachine) -> Unit)? = null
+
     private var keyboardLine = 0
     var cassetteMotor = false
         private set
@@ -104,9 +110,18 @@ class CpcMachine(
         keyTyper.onFrame()
         val end = cpu.cycles + CpcTiming.TSTATES_PER_FRAME
         val cpu = this.cpu
-        while (cpu.cycles < end) {
-            syncVideo()
-            cpu.step()
+        val hook = instructionHook
+        if (hook == null) {
+            while (cpu.cycles < end) {
+                syncVideo()
+                cpu.step()
+            }
+        } else {
+            while (cpu.cycles < end) {
+                syncVideo()
+                hook.invoke(this)
+                cpu.step()
+            }
         }
         syncVideo()
         syncAudio()
