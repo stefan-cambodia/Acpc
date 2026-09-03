@@ -53,14 +53,22 @@ Run with:
 
 ## Past the title screen
 
-The harness also "nudges" a game whose picture has been static for three
-seconds while the drive is idle (Space, Fire, Return, "1", Fire, Space in
-turn; `<name>.nonudge` disables it). With 70 s runs this reached actual
-gameplay, rendered correctly, in Dizzy III, Harrier Attack, Nemesis, Prince
-of Persia and Robocop; Bubble Bobble, Fruity Frank, Bomb Jack and Rick
-Dangerous II reached their option menus; Commando reached its credits
-screen; Barbarian and Gryzor were still loading their second part at 70 s
-(loading pictures drawn progressively, drive active).
+The harness sends "nudges" every six seconds while the drive is idle,
+cycling through a key list up to three times, so a prompt that appears late
+still gets its key. Keys are held for 12 frames (a human tap; the 3-frame
+press of the text typer is too short for some games, Manic Miner among
+them). Per-disc files: `<name>.nudges` (comma-separated tokens: `SPACE`,
+`RETURN`, `ENTER`, `FIRE`, a letter or a digit; `token@25` forces it at that
+second, once), `<name>.nonudge`, `<name>.play` (after the nudges, wave the
+joystick and fire so sprites, scrolling and collisions run), `<name>.secs`,
+`<name>.cmd`, `<name>.464`.
+
+With 90 s runs, gameplay was reached and rendered correctly in Bomb Jack
+(attract mode after the trainer prompts), Commando, Dizzy III, Elite
+(commander screen), Fruity Frank, Harrier Attack, Manic Miner, Nemesis,
+Prince of Persia, Rick Dangerous II and Robocop. Bubble Bobble and Oh Mummy
+reached their option screens; Barbarian and Gryzor were still loading their
+second part at 70 s (loading pictures drawn progressively, drive active).
 
 Games verified interactively on a phone (played, not only booted): Live and
 Let Die (Domark), Sean McManus collection programs.

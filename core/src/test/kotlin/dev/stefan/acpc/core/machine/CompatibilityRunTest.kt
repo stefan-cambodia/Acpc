@@ -62,8 +62,18 @@ class CompatibilityRunTest {
         val seconds = (File(diskDir, "$name.secs").takeIf { it.exists() }?.readText()?.trim()?.toIntOrNull()) ?: 40
         // Nudges get past title screens and menus: sent one at a time when the
         // picture has been static for a while and the disc is idle (`<name>.nonudge` disables them).
-        val nudges = if (File(diskDir, "$name.nonudge").exists()) emptyList() else listOf("SPACE", "FIRE", "RETURN", "1", "FIRE", "SPACE")
+        val nudges = when {
+            File(diskDir, "$name.nonudge").exists() -> emptyList()
+            File(diskDir, "$name.nudges").exists() -> File(diskDir, "$name.nudges").readText().split(',').map { it.trim() }.filter { it.isNotEmpty() }
+            else -> listOf("SPACE", "FIRE", "RETURN", "1", "FIRE", "SPACE")
+        }
+        // Once the nudges are exhausted, "play": wave the joystick and fire so
+        // that sprites, scrolling and collisions get exercised (`<name>.play`).
+        val play = File(diskDir, "$name.play").exists()
+        var playing = false
+        var heldKey: dev.stefan.acpc.core.keyboard.CpcKey? = null
         var nudgeIndex = 0
+        var nudgeCycles = 0
         var staticSeconds = 0
         var lastNudgeSecond = -100
         val sent = ArrayList<String>()
@@ -74,23 +84,47 @@ class CompatibilityRunTest {
         val start = System.nanoTime()
         for (second in 1..seconds) {
             repeat(50) {
+                if (playing) {
+                    val phase = (second * 50 + it) / 25 % 8
+                    emu.setJoystick(0, phase < 2, phase in 4..5, phase == 2, phase == 6, it % 20 < 4, false)
+                }
                 frame = emu.runFrame()
                 pcSamples += emu.machine.cpu.pc
-                if (it == 10) emu.setJoystick(0, dev.stefan.acpc.core.joystick.JoystickButton.FIRE1, false)
+                if (it == 10 && !playing) emu.setJoystick(0, dev.stefan.acpc.core.joystick.JoystickButton.FIRE1, false)
+                if (it == 12) heldKey?.let { k -> emu.releaseKey(k); heldKey = null }
             }
             val h = frame.pixels.contentHashCode()
             if (h != lastHash) { changes++; staticSeconds = 0 } else staticSeconds++
             lastHash = h
             if (second == 8 && extra != null) emu.typeText(extra)
             val discIdle = !emu.machine.fdc.motorOn
-            if (nudgeIndex < nudges.size && staticSeconds >= 3 && discIdle && second - lastNudgeSecond >= 6 && second > 10) {
-                val n = nudges[nudgeIndex++]
-                when (n) {
-                    "SPACE" -> emu.typeText(" ")
-                    "RETURN" -> emu.typeText("\n")
-                    "FIRE" -> emu.setJoystick(0, dev.stefan.acpc.core.joystick.JoystickButton.FIRE1, true)
-                    else -> emu.typeText(n)
+            // Start playing once the game no longer needs nudges: list exhausted, or
+            // the picture has been moving on its own for ten seconds (gameplay / attract).
+            if (play && !playing && second > 15 && discIdle && (nudgeCycles > 0 || second - maxOf(lastNudgeSecond, 10) >= 10)) {
+                playing = true; sent += "PLAY@${second}s"
+            }
+            // A nudge written "token@25" is forced at that second (for prompts on animated screens).
+            // Nudges are sent every six seconds while the disc is idle, cycling through
+            // the list up to three times, so a prompt that appears late still gets its key.
+            if (nudgeIndex >= nudges.size && nudges.isNotEmpty() && nudgeCycles < 3) { nudgeIndex = 0; nudgeCycles++ }
+            val next = nudges.getOrNull(nudgeIndex)
+            val forcedAt = next?.substringAfter('@', "")?.toIntOrNull()
+            val due = next != null && if (forcedAt != null) second >= forcedAt && nudgeCycles == 0 else (discIdle && second - lastNudgeSecond >= 6 && second > 10)
+            if (next != null && forcedAt != null && nudgeCycles > 0) { nudgeIndex++ }   // forced nudges are one-shot
+            else if (due) {
+                nudgeIndex++
+                val n = next!!.substringBefore('@')
+                // Keys are held for 12 frames (like a human tap), longer than the typer's 3.
+                val key = when (n) {
+                    "SPACE" -> dev.stefan.acpc.core.keyboard.CpcKey.SPACE
+                    "RETURN" -> dev.stefan.acpc.core.keyboard.CpcKey.RETURN
+                    "ENTER" -> dev.stefan.acpc.core.keyboard.CpcKey.ENTER
+                    "FIRE" -> null
+                    else -> if (n.length == 1 && n[0].isLetter()) dev.stefan.acpc.core.keyboard.CpcKey.valueOf(n.uppercase())
+                        else if (n.length == 1 && n[0].isDigit()) dev.stefan.acpc.core.keyboard.CpcKey.valueOf("DIGIT_$n")
+                        else null
                 }
+                if (key != null) { emu.pressKey(key); heldKey = key } else if (n == "FIRE") emu.setJoystick(0, dev.stefan.acpc.core.joystick.JoystickButton.FIRE1, true) else emu.typeText(n)
                 sent += "$n@${second}s"
                 lastNudgeSecond = second
                 staticSeconds = 0
