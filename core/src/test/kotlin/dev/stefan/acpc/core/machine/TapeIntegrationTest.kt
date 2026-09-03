@@ -52,6 +52,7 @@ class TapeIntegrationTest {
         var changes = 0
         var loadedAt = -1
         var idleSeconds = 0
+        var nudges = 0
         val start = System.nanoTime()
         var frame = emu.runFrame()
         var second = 0
@@ -63,6 +64,9 @@ class TapeIntegrationTest {
             lastHash = h
             val status = emu.tapeStatus()!!
             idleSeconds = if (status.moving) 0 else idleSeconds + 1
+            // A player would press a key at a prompt: nudge after 4 s and 8 s of idle motor.
+            if (!status.atEnd && idleSeconds == 4) { emu.typeText(" "); nudges++ }
+            if (!status.atEnd && idleSeconds == 8) { emu.machine.keyTyper.typeKey(dev.stefan.acpc.core.keyboard.CpcKey.RETURN); nudges++ }
             // Loaded: tape at its end, or the motor left off for 12 s after some loading (loaders pause it between blocks).
             if (loadedAt < 0 && (status.atEnd || (idleSeconds >= 12 && status.positionSeconds > 5))) loadedAt = second
             if (second % 60 == 0) CompatibilityRunTest.savePng(frame, File(outDir, "$name-${second}s.png"))
@@ -71,8 +75,8 @@ class TapeIntegrationTest {
         CompatibilityRunTest.savePng(frame, File(outDir, "$name-final.png"))
         val elapsed = (System.nanoTime() - start) / 1e9
         val st = emu.tapeStatus()!!
-        return "%s: tape %ds, ran %ds in %.1fs, motor stopped at %s, position %.0f/%.0f s, frame changes=%d, mode=%d".format(
-            name, tapeSeconds, second, elapsed, if (loadedAt > 0) "${loadedAt}s" else "never", st.positionSeconds, st.lengthSeconds, changes, emu.debugInfo().gaMode,
+        return "%s: tape %ds, ran %ds in %.1fs, motor stopped at %s, position %.0f/%.0f s, nudges=%d, frame changes=%d, mode=%d".format(
+            name, tapeSeconds, second, elapsed, if (loadedAt > 0) "${loadedAt}s" else "never", st.positionSeconds, st.lengthSeconds, nudges, changes, emu.debugInfo().gaMode,
         )
     }
 }

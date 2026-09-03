@@ -33,6 +33,24 @@
         android:textSize="10sp"
         android:visibility="gone" />
 
+    <!-- Tape counter, shown while a cassette is in the recorder. -->
+    <TextView
+        android:id="@+id/tape_status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|start"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="16dp"
+        android:background="@drawable/bg_round_button"
+        android:fontFamily="monospace"
+        android:paddingStart="10dp"
+        android:paddingTop="4dp"
+        android:paddingEnd="10dp"
+        android:paddingBottom="4dp"
+        android:textColor="@color/cpc_white"
+        android:textSize="12sp"
+        android:visibility="gone" />
+
     <!-- Invisible text field: receives the Android soft keyboard input and
          forwards it to the CPC (long press on the keyboard button). -->
     <EditText

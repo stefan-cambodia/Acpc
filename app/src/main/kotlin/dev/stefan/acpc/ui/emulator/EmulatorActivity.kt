@@ -118,6 +118,7 @@ class EmulatorActivity : AppCompatActivity() {
         ViewCompat.setOnApplyWindowInsetsListener(binding.quickBar) { v, insets ->
             val cutout = insets.getInsets(WindowInsetsCompat.Type.displayCutout())
             v.updatePadding(top = basePadding + cutout.top, right = basePadding + cutout.right)
+            (binding.tapeStatus.layoutParams as android.widget.FrameLayout.LayoutParams).topMargin = basePadding + 10 + cutout.top
             insets
         }
         // Track the soft keyboard: drop the focus of the hidden field when it goes away.
@@ -299,6 +300,7 @@ class EmulatorActivity : AppCompatActivity() {
     private val debugUpdater = object : Runnable {
         override fun run() {
             val s = session ?: return
+            updateTapeStatus(s)
             if (settings.developerOverlay) {
                 val info = s.emulator.debugInfo()
                 binding.debugOverlay.text = String.format(
@@ -313,6 +315,19 @@ class EmulatorActivity : AppCompatActivity() {
             }
             handler.postDelayed(this, 500)
         }
+    }
+
+    /** Tape counter: "▶ 01:23 / 05:10" (⏩ while fast loading, ■ when stopped). */
+    private fun updateTapeStatus(s: EmulatorSession) {
+        val t = s.emulator.tapeStatus()
+        if (t == null) {
+            binding.tapeStatus.visibility = View.GONE
+            return
+        }
+        val icon = when { t.moving && s.tapeTurbo -> "\u23E9"; t.moving -> "\u25B6"; else -> "\u25A0" }
+        binding.tapeStatus.text = String.format(java.util.Locale.US, "%s %02d:%02d / %02d:%02d", icon,
+            t.positionSeconds.toInt() / 60, t.positionSeconds.toInt() % 60, t.lengthSeconds.toInt() / 60, t.lengthSeconds.toInt() % 60)
+        binding.tapeStatus.visibility = View.VISIBLE
     }
 
     // ---- Physical keyboard and gamepads --------------------------------------
