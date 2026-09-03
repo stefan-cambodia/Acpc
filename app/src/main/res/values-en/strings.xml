@@ -69,6 +69,9 @@
     <string name="error_not_a_dsk">This file is not an Amstrad DSK image.</string>
     <string name="error_invalid_dsk">This DSK image is corrupted or incomplete.</string>
     <string name="error_zip_without_dsk">This ZIP archive contains no .dsk file.</string>
+    <string name="error_zip_cartridge">This archive holds a .cpr cartridge (CPC Plus / GX4000): cartridges are not supported.</string>
+    <string name="error_zip_tape">This archive holds a tape image (.cdt): only .dsk discs are supported.</string>
+    <string name="error_zip_snapshot">This archive holds a .sna snapshot: only .dsk discs are supported.</string>
     <string name="error_start_emulator">Cannot start the emulator: %1$s</string>
     <string name="error_state">Unreadable save state: %1$s</string>
     <string name="roms_missing_toast">Missing ROM for the %1$s: import your ROM files.</string>

@@ -123,7 +123,7 @@ class GameLibrary(context: Context) {
         var name = originalName
         if (isZip(bytes)) {
             val (dskName, dskBytes) = extractDskFromZip(bytes)
-                ?: throw ImportException(app.getString(dev.stefan.acpc.R.string.error_zip_without_dsk))
+                ?: throw ImportException(app.getString(zipWithoutDskMessage(bytes)))
             bytes = dskBytes
             name = dskName
         }
@@ -173,6 +173,23 @@ class GameLibrary(context: Context) {
 
         fun isZip(bytes: ByteArray): Boolean =
             bytes.size > 4 && bytes[0] == 'P'.code.toByte() && bytes[1] == 'K'.code.toByte() && bytes[2].toInt() == 3 && bytes[3].toInt() == 4
+
+        /** Explains why a ZIP is unusable: cartridge or tape images are common in game collections. */
+        fun zipWithoutDskMessage(bytes: ByteArray): Int {
+            val names = ArrayList<String>()
+            runCatching {
+                ZipInputStream(bytes.inputStream()).use { zip ->
+                    var entry = zip.nextEntry
+                    while (entry != null) { names += entry.name.lowercase(); entry = zip.nextEntry }
+                }
+            }
+            return when {
+                names.any { it.endsWith(".cpr") } -> dev.stefan.acpc.R.string.error_zip_cartridge
+                names.any { it.endsWith(".cdt") || it.endsWith(".tzx") || it.endsWith(".wav") } -> dev.stefan.acpc.R.string.error_zip_tape
+                names.any { it.endsWith(".sna") } -> dev.stefan.acpc.R.string.error_zip_snapshot
+                else -> dev.stefan.acpc.R.string.error_zip_without_dsk
+            }
+        }
 
         fun extractDskFromZip(bytes: ByteArray): Pair<String, ByteArray>? {
             ZipInputStream(bytes.inputStream()).use { zip ->
