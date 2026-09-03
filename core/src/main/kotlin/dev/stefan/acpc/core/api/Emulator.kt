@@ -79,6 +79,12 @@ interface Emulator {
     /** Restores a state produced by [saveState]. Throws [InvalidStateException]. */
     fun loadState(state: ByteArray)
 
+    /** Loads a standard CPC ".sna" snapshot (versions 1-3). Throws [InvalidStateException]. */
+    fun loadSnapshot(sna: ByteArray)
+
+    /** Writes the machine as a standard ".sna" snapshot (version 2). */
+    fun saveSnapshot(): ByteArray
+
     // ---- Diagnostics -------------------------------------------------------
 
     /** Human readable debug information (registers, FDC state...), for the developer overlay. */

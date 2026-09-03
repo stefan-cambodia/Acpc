@@ -55,6 +55,7 @@ the register masks and read-back rules of the emulated CRTC variant.
 | `fdc`        | `Upd765`, `FloppyDrive` | uPD765A command/execution/result phases, seek and rotation timing, overrun handling for copy-protected loaders, deleted data and CRC status from the image. |
 | `disk`       | `DiskImage`, `AmsdosCatalog` | Standard and extended DSK parsing and export, AMSDOS catalogue listing, format detection and auto-start command selection. |
 | `state`      | `StateCodec`    | Tagged binary save-state format (tag, length, payload), deflate-compressed, tolerant of unknown sections. |
+| `snapshot`   | `SnaFormat`     | The standard CPC `.sna` snapshot format, versions 1 to 3 (including v3 compressed `MEM` chunks): loads into a reset machine through the chips' normal write paths, and writes version 2 snapshots. |
 
 ### Tests — `core/src/test`
 
@@ -74,7 +75,7 @@ long ones only run with `-PslowTests`.
 | `video`     | `CpcSurfaceView` presents frames with the chosen scaling (fit, integer, stretch, pixel perfect), optional scanlines and filtering. |
 | `audio`     | `AndroidAudioSink` streams the AY output to a blocking `AudioTrack`; the blocking write paces the emulation thread on the audio clock, which keeps sound and video in sync without drift. |
 | `input`     | `JoystickOverlayView` (8-way stick, fire buttons, extra keys, drag-to-move edit mode, `OverlayLayout` profiles), `VirtualKeyboardView` (full 6128 layout, multi-touch, sticky SHIFT/CTRL), `KeyMapper` (Android key events to CPC keys, character-aware for symbol keys), `GamepadMapper`. Typed keys from all three sources go through the core's `KeyQueue`, which applies them at frame boundaries with minimum hold and release times, so the timing of touch taps and key events never depends on how the emulation thread batches its frames. |
-| `storage`   | `GameLibrary` (index of imported discs, cache of downloads, save-state files, ZIP extraction), `RomStore` (ROMs recognised by content hash). |
+| `storage`   | `GameLibrary` (index of imported discs and snapshots, cache of downloads, save-state files, ZIP extraction), `RomStore` (ROMs recognised by content hash). |
 | `network`   | `HttpDownloader` (bounded, cancellable, redirect-following download), `RemoteCatalog` (directory listing from an HTTP index or the archive.org metadata API, cached on disk). |
 | `settings`  | `AppSettings`: typed access to the preferences. |
 | `ui`        | `LibraryActivity` (games, search, favourites, remote dialog), `RemoteBrowserActivity` (searchable server listing), `EmulatorActivity` (display, overlays, quick bar, in-game menu, physical input), `SettingsActivity`, `KeyMappingActivity`, `RomSetupActivity`. |

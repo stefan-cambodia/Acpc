@@ -40,6 +40,7 @@ class GameAdapter(
     inner class Holder(private val b: ItemGameBinding) : RecyclerView.ViewHolder(b.root) {
         fun bind(entry: GameEntry) {
             b.title.text = entry.title
+            b.badge.text = if (entry.isSnapshot) "SNA" else "DSK"
             val ctx = b.root.context
             val played = if (entry.lastPlayed > 0) DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(entry.lastPlayed)) else ctx.getString(R.string.never_played)
             b.subtitle.text = ctx.getString(R.string.game_subtitle, entry.fileName.substringAfter('_'), entry.size / 1024, played)

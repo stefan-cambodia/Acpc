@@ -11,12 +11,12 @@
     android:paddingBottom="10dp">
 
     <TextView
+        android:id="@+id/badge"
         android:layout_width="40dp"
         android:layout_height="40dp"
         android:background="@color/cpc_blue_dark"
         android:fontFamily="monospace"
         android:gravity="center"
-        android:text="DSK"
         android:textColor="@color/cpc_yellow"
         android:textSize="11sp"
         android:textStyle="bold" />

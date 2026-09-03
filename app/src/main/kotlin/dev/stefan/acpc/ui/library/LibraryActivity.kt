@@ -180,7 +180,18 @@ class LibraryActivity : AppCompatActivity() {
     private fun showDetails(entry: GameEntry) {
         lifecycleScope.launch {
             val text = withContext(Dispatchers.IO) {
-                runCatching {
+                if (entry.isSnapshot) {
+                    runCatching {
+                        val info = dev.stefan.acpc.core.snapshot.SnaFormat.info(library.diskFile(entry).readBytes())
+                        buildString {
+                            append(getString(R.string.details_file, entry.fileName)).append('\n')
+                            append(getString(R.string.details_size, entry.size / 1024)).append('\n')
+                            append(getString(R.string.details_snapshot, info.version, info.ramKb, info.model?.displayName ?: "?")).append('\n')
+                            entry.sourceUrl?.let { append(getString(R.string.details_source, it)).append('\n') }
+                            append(getString(R.string.details_played, entry.playCount))
+                        }
+                    }.getOrElse { getString(R.string.error_cannot_read_file) }
+                } else runCatching {
                     val image = DskFormat.read(library.diskFile(entry).readBytes(), entry.title)
                     val format = AmsdosCatalog.detectFormat(image)
                     val files = AmsdosCatalog.list(image)

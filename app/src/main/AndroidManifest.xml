@@ -38,6 +38,10 @@
                 <data android:pathPattern=".*\\.DSK" />
                 <data android:pathPattern=".*\\..*\\.dsk" />
                 <data android:pathPattern=".*\\..*\\.DSK" />
+                <data android:pathPattern=".*\\.sna" />
+                <data android:pathPattern=".*\\.SNA" />
+                <data android:pathPattern=".*\\..*\\.sna" />
+                <data android:pathPattern=".*\\..*\\.SNA" />
             </intent-filter>
         </activity>
 

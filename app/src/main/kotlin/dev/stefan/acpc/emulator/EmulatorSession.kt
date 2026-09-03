@@ -127,6 +127,13 @@ class EmulatorSession(
         }
     }
 
+    /** Loads a ".sna" snapshot: replaces the whole machine state (the disc stays in the drive). */
+    fun loadSnapshot(bytes: ByteArray) {
+        pendingAutoStart = null
+        emulator.releaseAllKeys()
+        emulator.loadSnapshot(bytes)
+    }
+
     @Volatile private var pendingAutoStart: String? = null
     @Volatile private var autoStartAtFrame = 0L
 

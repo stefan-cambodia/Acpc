@@ -465,11 +465,15 @@ class EmulatorActivity : AppCompatActivity() {
         s.emulator.releaseAllKeys()
         s.emulator.reset()
         s.currentEntry?.let { entry ->
-            // Re-run the auto-start on the inserted disc.
-            val autoStart = entry.autoStart ?: settings.autoStart
             runCatching {
                 val bytes = library.diskFile(entry).readBytes()
-                s.insertDisk(bytes, entry.title, autoStart, resetFirst = true)
+                if (entry.isSnapshot) {
+                    s.loadSnapshot(bytes)                       // back to the snapshot's starting point
+                } else {
+                    // Re-run the auto-start on the inserted disc.
+                    val autoStart = entry.autoStart ?: settings.autoStart
+                    s.insertDisk(bytes, entry.title, autoStart, resetFirst = true)
+                }
             }
         }
         toast(R.string.toast_reset_done)

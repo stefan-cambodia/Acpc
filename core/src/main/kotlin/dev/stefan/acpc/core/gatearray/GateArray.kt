@@ -248,6 +248,12 @@ class GateArray(
 
     // ---- State -------------------------------------------------------------
 
+    /** Makes a mode effective immediately instead of at the next HSYNC (snapshot loading). */
+    fun forceMode(m: Int) {
+        mode = m and 3
+        pendingMode = mode
+    }
+
     fun exportState(): IntArray = intArrayOf(
         selectedPen, mode, pendingMode, rmr, hsyncCounter, vsyncHsyncDelay,
         if (interruptRequested) 1 else 0, rasterX, rasterY,

@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
 import dev.stefan.acpc.core.disk.DskFormat
+import dev.stefan.acpc.core.snapshot.SnaFormat
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
@@ -11,7 +12,7 @@ import java.io.InputStream
 import java.security.MessageDigest
 import java.util.zip.ZipInputStream
 
-/** One disc image known to the library. */
+/** One disc image or snapshot known to the library. */
 data class GameEntry(
     val id: String,
     var title: String,
@@ -24,9 +25,13 @@ data class GameEntry(
     var modelOverride: String? = null,
     var autoStart: Boolean? = null,
     var playCount: Int = 0,
+    /** "dsk" (disc image) or "sna" (snapshot). */
+    val kind: String = KIND_DSK,
 ) {
+    val isSnapshot: Boolean get() = kind == KIND_SNA
+
     fun toJson(): JSONObject = JSONObject().apply {
-        put("id", id); put("title", title); put("fileName", fileName); put("size", size)
+        put("id", id); put("title", title); put("fileName", fileName); put("size", size); put("kind", kind)
         put("addedAt", addedAt); put("lastPlayed", lastPlayed); put("favorite", favorite)
         put("sourceUrl", sourceUrl); put("modelOverride", modelOverride)
         if (autoStart != null) put("autoStart", autoStart)
@@ -41,14 +46,18 @@ data class GameEntry(
             modelOverride = o.optString("modelOverride").takeIf { it.isNotEmpty() && it != "null" },
             autoStart = if (o.has("autoStart")) o.getBoolean("autoStart") else null,
             playCount = o.optInt("playCount"),
+            kind = o.optString("kind").ifEmpty { KIND_DSK },
         )
+
+        const val KIND_DSK = "dsk"
+        const val KIND_SNA = "sna"
     }
 }
 
 /**
- * The game library: disc images copied into private storage (`files/disks/`)
- * plus a JSON index. Disc images are stored as-is; a ZIP archive is unpacked
- * to its first `.dsk` member.
+ * The game library: disc images and snapshots copied into private storage
+ * (`files/disks/`) plus a JSON index. Files are stored as-is; a ZIP archive
+ * is unpacked to its first `.dsk` or `.sna` member.
  */
 class GameLibrary(context: Context) {
     private val app = context.applicationContext
@@ -117,20 +126,30 @@ class GameLibrary(context: Context) {
         return importBytes(bytes, name, null)
     }
 
-    /** Imports raw bytes (a DSK or a ZIP containing one). */
+    /** Imports raw bytes (a DSK, a SNA snapshot, or a ZIP containing one). */
     fun importBytes(rawBytes: ByteArray, originalName: String, sourceUrl: String?): GameEntry {
         var bytes = rawBytes
         var name = originalName
         if (isZip(bytes)) {
-            val (dskName, dskBytes) = extractDskFromZip(bytes)
+            val (member, memberBytes) = extractFromZip(bytes, listOf(".dsk", ".sna"))
                 ?: throw ImportException(app.getString(zipWithoutDskMessage(bytes)))
-            bytes = dskBytes
-            name = dskName
+            bytes = memberBytes
+            name = member
         }
-        if (!DskFormat.isDsk(bytes)) throw ImportException(app.getString(dev.stefan.acpc.R.string.error_not_a_dsk))
+        val kind = when {
+            DskFormat.isDsk(bytes) -> GameEntry.KIND_DSK
+            SnaFormat.isSna(bytes) -> GameEntry.KIND_SNA
+            else -> throw ImportException(app.getString(dev.stefan.acpc.R.string.error_not_a_dsk))
+        }
         // Validate the structure now so the emulator never sees a broken image.
-        runCatching { DskFormat.read(bytes, name) }.getOrElse {
-            throw ImportException(app.getString(dev.stefan.acpc.R.string.error_invalid_dsk))
+        if (kind == GameEntry.KIND_DSK) {
+            runCatching { DskFormat.read(bytes, name) }.getOrElse {
+                throw ImportException(app.getString(dev.stefan.acpc.R.string.error_invalid_dsk))
+            }
+        } else {
+            runCatching { SnaFormat.info(bytes) }.getOrElse {
+                throw ImportException(app.getString(dev.stefan.acpc.R.string.error_invalid_sna, it.message ?: ""))
+            }
         }
         val id = sha1(bytes).take(16)
         synchronized(this) {
@@ -149,6 +168,7 @@ class GameLibrary(context: Context) {
             size = bytes.size.toLong(),
             addedAt = System.currentTimeMillis(),
             sourceUrl = sourceUrl,
+            kind = kind,
         )
         synchronized(this) {
             entries[id] = entry
@@ -186,16 +206,15 @@ class GameLibrary(context: Context) {
             return when {
                 names.any { it.endsWith(".cpr") } -> dev.stefan.acpc.R.string.error_zip_cartridge
                 names.any { it.endsWith(".cdt") || it.endsWith(".tzx") || it.endsWith(".wav") } -> dev.stefan.acpc.R.string.error_zip_tape
-                names.any { it.endsWith(".sna") } -> dev.stefan.acpc.R.string.error_zip_snapshot
                 else -> dev.stefan.acpc.R.string.error_zip_without_dsk
             }
         }
 
-        fun extractDskFromZip(bytes: ByteArray): Pair<String, ByteArray>? {
+        fun extractFromZip(bytes: ByteArray, extensions: List<String>): Pair<String, ByteArray>? {
             ZipInputStream(bytes.inputStream()).use { zip ->
                 var entry = zip.nextEntry
                 while (entry != null) {
-                    if (!entry.isDirectory && entry.name.lowercase().endsWith(".dsk")) {
+                    if (!entry.isDirectory && extensions.any { entry!!.name.lowercase().endsWith(it) }) {
                         val data = readBounded(zip, MAX_DISK_SIZE)
                         return entry.name.substringAfterLast('/') to data
                     }

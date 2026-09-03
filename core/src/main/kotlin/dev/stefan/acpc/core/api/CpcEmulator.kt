@@ -127,6 +127,18 @@ class CpcEmulator(
         }
     }
 
+    override fun loadSnapshot(sna: ByteArray) = synchronized(lock) {
+        try {
+            dev.stefan.acpc.core.snapshot.SnaFormat.load(sna, machine)
+        } catch (e: InvalidStateException) {
+            throw e
+        } catch (e: Exception) {
+            throw InvalidStateException("Corrupted snapshot: ${e.message}", e)
+        }
+    }
+
+    override fun saveSnapshot(): ByteArray = synchronized(lock) { dev.stefan.acpc.core.snapshot.SnaFormat.save(machine) }
+
     // ---- Diagnostics -------------------------------------------------------
 
     override fun debugInfo(): DebugInfo = synchronized(lock) {

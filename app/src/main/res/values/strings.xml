@@ -4,7 +4,7 @@
     <string name="title_settings">Paramètres</string>
 
     <!-- Library -->
-    <string name="library_open_dsk">Ouvrir un DSK</string>
+    <string name="library_open_dsk">Ouvrir un DSK / SNA</string>
     <string name="library_remote">Serveur distant</string>
     <string name="library_favorites">Favoris</string>
     <string name="library_all_games">Tous</string>
@@ -71,12 +71,13 @@
     <!-- Errors -->
     <string name="error_cannot_read_file">Impossible de lire ce fichier.</string>
     <string name="error_cannot_read_dsk">Impossible de lire cette image DSK.</string>
-    <string name="error_not_a_dsk">Ce fichier n\'est pas une image DSK Amstrad.</string>
+    <string name="error_not_a_dsk">Ce fichier n\'est ni une image DSK Amstrad ni un instantané SNA.</string>
+    <string name="error_invalid_sna">Instantané SNA illisible : %1$s</string>
+    <string name="details_snapshot">Instantané SNA v%1$d, %2$d Ko de RAM, machine : %3$s</string>
     <string name="error_invalid_dsk">Cette image DSK est corrompue ou incomplète.</string>
     <string name="error_zip_without_dsk">Cette archive ZIP ne contient pas de fichier .dsk.</string>
     <string name="error_zip_cartridge">Cette archive contient une cartouche .cpr (CPC Plus / GX4000) : les cartouches ne sont pas prises en charge.</string>
     <string name="error_zip_tape">Cette archive contient une image de cassette (.cdt) : seules les disquettes .dsk sont prises en charge.</string>
-    <string name="error_zip_snapshot">Cette archive contient un instantané .sna : seules les disquettes .dsk sont prises en charge.</string>
     <string name="error_start_emulator">Impossible de démarrer l\'émulateur : %1$s</string>
     <string name="error_state">Sauvegarde d\'état illisible : %1$s</string>
 

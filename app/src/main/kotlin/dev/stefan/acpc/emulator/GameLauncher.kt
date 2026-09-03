@@ -6,6 +6,7 @@ import android.widget.Toast
 import dev.stefan.acpc.R
 import dev.stefan.acpc.core.api.EmulatorException
 import dev.stefan.acpc.core.machine.CpcModel
+import dev.stefan.acpc.core.snapshot.SnaFormat
 import dev.stefan.acpc.settings.AppSettings
 import dev.stefan.acpc.storage.GameEntry
 import dev.stefan.acpc.storage.GameLibrary
@@ -19,7 +20,16 @@ object GameLauncher {
     fun launch(activity: Activity, entry: GameEntry?, library: GameLibrary, resumeExisting: Boolean = false) {
         val settings = AppSettings(activity)
         val romStore = RomStore(activity)
-        val model = entry?.modelOverride?.let { runCatching { CpcModel.valueOf(it) }.getOrNull() } ?: settings.model
+        val bytes = entry?.let { runCatching { library.diskFile(it).readBytes() }.getOrNull() }
+        if (entry != null && bytes == null) {
+            Toast.makeText(activity, activity.getString(R.string.error_cannot_read_file), Toast.LENGTH_LONG).show()
+            return
+        }
+        // A snapshot dictates its machine unless the user overrode it; a 128 KB dump needs a 6128.
+        val snapshotModel = if (entry != null && entry.isSnapshot && bytes != null) {
+            runCatching { SnaFormat.info(bytes) }.getOrNull()?.let { info -> info.model ?: if (info.ramKb > 64) CpcModel.CPC6128 else null }
+        } else null
+        val model = entry?.modelOverride?.let { runCatching { CpcModel.valueOf(it) }.getOrNull() } ?: snapshotModel ?: settings.model
         if (!romStore.canBoot(model)) {
             Toast.makeText(activity, activity.getString(R.string.roms_missing_toast, model.displayName), Toast.LENGTH_LONG).show()
             activity.startActivity(Intent(activity, RomSetupActivity::class.java))
@@ -36,11 +46,14 @@ object GameLauncher {
             Toast.makeText(activity, activity.getString(R.string.error_start_emulator, e.message ?: ""), Toast.LENGTH_LONG).show()
             return
         }
-        if (entry != null) {
+        if (entry != null && bytes != null) {
             try {
-                val bytes = library.diskFile(entry).readBytes()
-                val autoStart = entry.autoStart ?: settings.autoStart
-                session.insertDisk(bytes, entry.title, autoStart, resetFirst = true)
+                if (entry.isSnapshot) {
+                    session.loadSnapshot(bytes)
+                } else {
+                    val autoStart = entry.autoStart ?: settings.autoStart
+                    session.insertDisk(bytes, entry.title, autoStart, resetFirst = true)
+                }
                 session.currentEntry = entry
                 entry.lastPlayed = System.currentTimeMillis()
                 entry.playCount++
