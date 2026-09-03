@@ -13,7 +13,6 @@
     <style name="Theme.Acpc.Emulator">
         <item name="android:windowBackground">@color/cpc_black</item>
         <item name="android:windowFullscreen">true</item>
-        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
     </style>
 
     <!-- Screens with a toolbar: the toolbar lives in the layout (see ToolbarActivity),

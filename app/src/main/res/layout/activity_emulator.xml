@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -67,7 +68,7 @@
             android:background="@drawable/bg_round_button"
             android:contentDescription="@string/menu_keyboard"
             android:src="@drawable/ic_keyboard"
-            android:tint="@color/cpc_white" />
+            app:tint="@color/cpc_white" />
 
         <ImageButton
             android:id="@+id/button_reset"
@@ -78,7 +79,7 @@
             android:background="@drawable/bg_round_button"
             android:contentDescription="@string/menu_reset"
             android:src="@drawable/ic_reset"
-            android:tint="@color/cpc_white" />
+            app:tint="@color/cpc_white" />
 
         <ImageButton
             android:id="@+id/button_menu"
@@ -89,7 +90,7 @@
             android:background="@drawable/bg_round_button"
             android:contentDescription="@string/menu_title"
             android:src="@drawable/ic_menu"
-            android:tint="@color/cpc_white" />
+            app:tint="@color/cpc_white" />
     </LinearLayout>
 
     <dev.stefan.acpc.input.VirtualKeyboardView

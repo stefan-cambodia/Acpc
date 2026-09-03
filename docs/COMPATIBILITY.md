@@ -59,7 +59,7 @@ still gets its key. Keys are held for 12 frames (a human tap; the 3-frame
 press of the text typer is too short for some games, Manic Miner among
 them). Per-disc files: `<name>.nudges` (comma-separated tokens: `SPACE`,
 `RETURN`, `ENTER`, `FIRE`, a letter or a digit; `token@25` forces it at that
-second, once), `<name>.nonudge`, `<name>.play` (after the nudges, wave the
+second, once), `<name>.nonudge`, `<name>.hold` (frames a nudged key is held, default 12), `<name>.play` (after the nudges, wave the
 joystick and fire so sprites, scrolling and collisions run), `<name>.secs`,
 `<name>.cmd`, `<name>.464`.
 

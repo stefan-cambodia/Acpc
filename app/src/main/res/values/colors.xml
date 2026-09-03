@@ -7,5 +7,4 @@
     <color name="cpc_cyan">#FF00FFFF</color>
     <color name="cpc_white">#FFFFFFFF</color>
     <color name="cpc_black">#FF000000</color>
-    <color name="overlay_control">#66FFFFFF</color>
 </resources>

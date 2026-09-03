@@ -3,6 +3,7 @@ package dev.stefan.acpc.ui.emulator
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.content.res.Configuration
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -15,6 +16,7 @@ import android.view.View
 import android.view.WindowManager
 import android.view.inputmethod.InputMethodManager
 import android.widget.Toast
+import androidx.activity.addCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -64,7 +66,6 @@ class EmulatorActivity : AppCompatActivity() {
     private fun queueKey(key: CpcKey, pressed: Boolean) { session?.emulator?.queueKey(key, pressed) }
     private var hatX = 0
     private var hatY = 0
-    private var backPressed = false
 
     private val openDisk = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) insertDiskFromUri(uri)
@@ -83,6 +84,13 @@ class EmulatorActivity : AppCompatActivity() {
         setContentView(binding.root)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         WindowCompat.setDecorFitsSystemWindows(window, false)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            window.attributes = window.attributes.apply { layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES }
+        }
+        // Back (button or gesture) opens the menu, or just closes the Android keyboard when it is up.
+        onBackPressedDispatcher.addCallback(this) {
+            if (binding.textInput.hasFocus()) hideSystemKeyboard() else showMenu()
+        }
 
         keyMapper = KeyMapper(settings.physicalKeyMap)
         gamepadMapper = GamepadMapper(settings.gamepadMap)
@@ -293,6 +301,7 @@ class EmulatorActivity : AppCompatActivity() {
             if (settings.developerOverlay) {
                 val info = s.emulator.debugInfo()
                 binding.debugOverlay.text = String.format(
+                    java.util.Locale.US,
                     "%s  %.1f fps  %.0f%%  %.2f ms/frame\nPC=%04X SP=%04X AF=%04X BC=%04X DE=%04X HL=%04X IX=%04X IY=%04X IM%d IFF=%d\nmode=%d rom=%s ram=%02X CRTC R1=%d R2=%d R6=%d R7=%d R9=%d R12/13=%02X%02X\nFDC %s",
                     info.model, s.fps, s.speedPercent, s.frameTimeMs,
                     info.pc, info.sp, info.af, info.bc, info.de, info.hl, info.ix, info.iy, info.im, if (info.iff1) 1 else 0,
@@ -317,22 +326,6 @@ class EmulatorActivity : AppCompatActivity() {
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         val e = session?.emulator ?: return super.dispatchKeyEvent(event)
         val code = event.keyCode
-        if (code == KeyEvent.KEYCODE_BACK) {
-            // Open the menu only for a complete press seen by us: when the soft
-            // keyboard is showing, it consumes the key-down and we would
-            // otherwise react to the stray key-up.
-            when (event.action) {
-                KeyEvent.ACTION_DOWN -> backPressed = true
-                KeyEvent.ACTION_UP -> {
-                    val complete = backPressed
-                    backPressed = false
-                    if (complete && !event.isCanceled) {
-                        if (binding.textInput.hasFocus()) hideSystemKeyboard() else showMenu()
-                    }
-                }
-            }
-            return true
-        }
         if (code == KeyEvent.KEYCODE_VOLUME_UP || code == KeyEvent.KEYCODE_VOLUME_DOWN) return super.dispatchKeyEvent(event)
         if (isGamepad(event)) {
             val target = gamepadMapper[code] ?: return super.dispatchKeyEvent(event)
@@ -626,10 +619,6 @@ class EmulatorActivity : AppCompatActivity() {
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
         if (hasFocus) hideSystemBars()
-    }
-
-    override fun onBackPressed() {
-        showMenu()
     }
 
     @Suppress("unused")

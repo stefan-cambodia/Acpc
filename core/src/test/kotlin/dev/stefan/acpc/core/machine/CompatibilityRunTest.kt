@@ -72,6 +72,7 @@ class CompatibilityRunTest {
         val play = File(diskDir, "$name.play").exists()
         var playing = false
         var heldKey: dev.stefan.acpc.core.keyboard.CpcKey? = null
+        val holdFrames = (File(diskDir, "$name.hold").takeIf { it.exists() }?.readText()?.trim()?.toIntOrNull()) ?: 12
         var nudgeIndex = 0
         var nudgeCycles = 0
         var staticSeconds = 0
@@ -91,7 +92,7 @@ class CompatibilityRunTest {
                 frame = emu.runFrame()
                 pcSamples += emu.machine.cpu.pc
                 if (it == 10 && !playing) emu.setJoystick(0, dev.stefan.acpc.core.joystick.JoystickButton.FIRE1, false)
-                if (it == 12) heldKey?.let { k -> emu.releaseKey(k); heldKey = null }
+                if (it == holdFrames) heldKey?.let { k -> emu.releaseKey(k); heldKey = null }
             }
             val h = frame.pixels.contentHashCode()
             if (h != lastHash) { changes++; staticSeconds = 0 } else staticSeconds++

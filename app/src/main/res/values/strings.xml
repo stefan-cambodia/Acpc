@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Acpc</string>
+    <string name="app_name" translatable="false">Acpc</string>
     <string name="title_settings">Paramètres</string>
 
     <!-- Library -->
-    <string name="library_my_games">Mes jeux</string>
     <string name="library_open_dsk">Ouvrir un DSK</string>
     <string name="library_remote">Serveur distant</string>
     <string name="library_favorites">Favoris</string>
@@ -61,7 +60,6 @@
     <string name="orientation_landscape">Paysage</string>
     <string name="orientation_portrait">Portrait</string>
     <string name="menu_orientation">Orientation de l\'écran</string>
-    <string name="action_download">Télécharger</string>
     <string name="downloading">Téléchargement…</string>
     <string name="progress_bytes">%1$d / %2$d Ko</string>
     <string name="progress_bytes_unknown">%1$d Ko</string>
@@ -127,7 +125,7 @@
     <string name="toast_disk_ejected">Disquette éjectée</string>
     <string name="toast_no_disk">Aucune disquette dans le lecteur A</string>
     <string name="toast_edit_overlay">Faites glisser les commandes. Rouvrez le menu pour terminer.</string>
-    <string name="dialog_disk_files">%1$s</string>
+    <string name="dialog_disk_files" translatable="false">%1$s</string>
     <string name="dialog_no_files">(aucun fichier AMSDOS)</string>
     <string name="profile_platform">Jeu de plateforme</string>
     <string name="profile_adventure">Jeu d\'aventure</string>
