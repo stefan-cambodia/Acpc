@@ -4,6 +4,7 @@ import dev.stefan.acpc.core.keyboard.CpcKey
 import dev.stefan.acpc.core.keyboard.KeyQueue
 import dev.stefan.acpc.core.keyboard.KeyboardMatrix
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -48,6 +49,19 @@ class KeyQueueTest {
         q.onFrame()
         // Fourth frame: A has been held three frames, so A is released and then SHIFT (held as long) right after it.
         assertTrue(!matrix.isDown(CpcKey.A) && !matrix.isDown(CpcKey.SHIFT))
+    }
+
+    @Test
+    fun `a press waits for the frame after a release`() {
+        val matrix = KeyboardMatrix()
+        val q = KeyQueue(matrix)
+        q.push(CpcKey.SHIFT, true); q.push(CpcKey.DIGIT_6, true); q.push(CpcKey.DIGIT_6, false); q.push(CpcKey.SHIFT, false)
+        q.push(CpcKey.DIGIT_4, true)
+        repeat(4) { q.onFrame() }
+        // Frame 4: 6 and SHIFT released; the 4 must not be pressed yet.
+        assertFalse(matrix.isDown(CpcKey.SHIFT)); assertFalse(matrix.isDown(CpcKey.DIGIT_4))
+        q.onFrame()
+        assertTrue(matrix.isDown(CpcKey.DIGIT_4))
     }
 
     @Test

@@ -12,7 +12,10 @@ import java.util.concurrent.ConcurrentLinkedQueue
  * has been released for at least [MIN_UP_FRAMES], a release only once the
  * key has been held for at least [MIN_DOWN_FRAMES]; an event that has to
  * wait blocks the ones behind it, which keeps modifier ordering intact
- * (SHIFT down before the key, key up before SHIFT up).
+ * (SHIFT down before the key, key up before SHIFT up). A press is never
+ * applied in the same frame as a release: the firmware reads a new key's
+ * SHIFT/CTRL state from the previous scan, so "&" then "4" typed quickly
+ * would otherwise come out as "&$".
  *
  * Human typing is far slower than these limits, so the queue is transparent
  * in normal use. It matters for fast typists, key repeat, injected text and
@@ -49,11 +52,13 @@ class KeyQueue(private val matrix: KeyboardMatrix) {
             val e = incoming.poll() ?: break
             pending.addLast(e)
         }
+        var releasedThisFrame = false
         while (pending.isNotEmpty()) {
             val e = pending.first()
             if (e.pressed) {
                 val isDown = downSince.containsKey(e.key)
                 if (isDown) { pending.removeFirst(); continue }            // already held: nothing to do
+                if (releasedThisFrame) return                              // releases first, presses next frame
                 val up = upSince[e.key]
                 if (up != null && frame - up < MIN_UP_FRAMES) return       // let the release be scanned first
                 pending.removeFirst()
@@ -67,6 +72,7 @@ class KeyQueue(private val matrix: KeyboardMatrix) {
                 downSince.remove(e.key)
                 upSince[e.key] = frame
                 matrix.release(e.key)
+                releasedThisFrame = true
             }
         }
     }
