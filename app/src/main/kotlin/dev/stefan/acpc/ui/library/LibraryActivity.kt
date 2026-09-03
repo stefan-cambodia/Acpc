@@ -57,6 +57,7 @@ class LibraryActivity : AppCompatActivity() {
         }
         binding = ActivityLibraryBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        dev.stefan.acpc.ui.common.EdgeToEdge.padSystemBars(binding.root)
         library = GameLibrary(this)
         settings = AppSettings(this)
 

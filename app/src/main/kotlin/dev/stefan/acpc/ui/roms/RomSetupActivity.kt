@@ -3,14 +3,14 @@ package dev.stefan.acpc.ui.roms
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AppCompatActivity
+import dev.stefan.acpc.ui.common.ToolbarActivity
 import dev.stefan.acpc.R
 import dev.stefan.acpc.core.machine.CpcModel
 import dev.stefan.acpc.databinding.ActivityRomSetupBinding
 import dev.stefan.acpc.storage.RomStore
 
 /** Lets the user import the Amstrad ROM files (never bundled with the app). */
-class RomSetupActivity : AppCompatActivity() {
+class RomSetupActivity : ToolbarActivity() {
     private lateinit var binding: ActivityRomSetupBinding
     private lateinit var romStore: RomStore
 
@@ -31,16 +31,11 @@ class RomSetupActivity : AppCompatActivity() {
         binding = ActivityRomSetupBinding.inflate(layoutInflater)
         setContentView(binding.root)
         romStore = RomStore(this)
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
         binding.buttonImport.setOnClickListener { pickRoms.launch(arrayOf("*/*")) }
         binding.buttonDone.setOnClickListener { finish() }
         refresh()
     }
 
-    override fun onSupportNavigateUp(): Boolean {
-        finish()
-        return true
-    }
 
     private fun refresh() {
         val ok = "✔"

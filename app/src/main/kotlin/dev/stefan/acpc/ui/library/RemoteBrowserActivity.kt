@@ -8,7 +8,7 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
-import androidx.appcompat.app.AppCompatActivity
+import dev.stefan.acpc.ui.common.ToolbarActivity
 import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -28,7 +28,7 @@ import java.net.URI
  * Browses a remote directory of disc images (HTTP index or archive.org item):
  * searchable list, sub-directories, one tap to download, cache and play.
  */
-class RemoteBrowserActivity : AppCompatActivity() {
+class RemoteBrowserActivity : ToolbarActivity() {
     private lateinit var binding: ActivityRemoteBrowserBinding
     private lateinit var library: GameLibrary
     private lateinit var adapter: RemoteAdapter
@@ -42,7 +42,6 @@ class RemoteBrowserActivity : AppCompatActivity() {
         binding = ActivityRemoteBrowserBinding.inflate(layoutInflater)
         setContentView(binding.root)
         library = GameLibrary(this)
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
         title = displayName(url)
 
         adapter = RemoteAdapter(library) { file -> open(file) }
@@ -66,8 +65,6 @@ class RemoteBrowserActivity : AppCompatActivity() {
         MENU_REFRESH -> { load(forceRefresh = true); true }
         else -> super.onOptionsItemSelected(item)
     }
-
-    override fun onSupportNavigateUp(): Boolean { finish(); return true }
 
     private fun load(forceRefresh: Boolean) {
         binding.progress.visibility = View.VISIBLE

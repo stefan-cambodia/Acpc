@@ -16,10 +16,14 @@
         <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
     </style>
 
-    <style name="Theme.Acpc.WithActionBar" parent="Theme.Material3.Dark">
+    <!-- Screens with a toolbar: the toolbar lives in the layout (see ToolbarActivity),
+         which keeps it and the content between the system bars on Android 15+. -->
+    <style name="Theme.Acpc.WithActionBar" parent="Theme.Material3.Dark.NoActionBar">
         <item name="colorPrimary">@color/cpc_yellow</item>
         <item name="colorOnPrimary">@color/cpc_black</item>
         <item name="android:colorBackground">@color/cpc_blue</item>
         <item name="colorSurface">@color/cpc_blue_dark</item>
+        <item name="android:statusBarColor">@color/cpc_blue_dark</item>
+        <item name="android:navigationBarColor">@color/cpc_blue_dark</item>
     </style>
 </resources>

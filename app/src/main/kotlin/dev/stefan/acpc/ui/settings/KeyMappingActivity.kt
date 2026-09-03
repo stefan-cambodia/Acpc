@@ -5,7 +5,7 @@ import android.view.KeyEvent
 import android.widget.ArrayAdapter
 import android.widget.ListView
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
+import dev.stefan.acpc.ui.common.ToolbarActivity
 import dev.stefan.acpc.R
 import dev.stefan.acpc.core.joystick.JoystickButton
 import dev.stefan.acpc.core.keyboard.CpcKey
@@ -17,7 +17,7 @@ import dev.stefan.acpc.settings.AppSettings
  * Remapping screen: pick a CPC key (or joystick function), then press the
  * physical key / gamepad button to assign.
  */
-class KeyMappingActivity : AppCompatActivity() {
+class KeyMappingActivity : ToolbarActivity() {
     private lateinit var settings: AppSettings
     private var gamepad = false
     private lateinit var keyMapper: KeyMapper
@@ -31,15 +31,12 @@ class KeyMappingActivity : AppCompatActivity() {
         gamepad = intent.getBooleanExtra(EXTRA_GAMEPAD, false)
         keyMapper = KeyMapper(settings.physicalKeyMap)
         gamepadMapper = GamepadMapper(settings.gamepadMap)
-        title = getString(if (gamepad) R.string.pref_gamepad_map else R.string.pref_physical_keymap)
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
         list = ListView(this)
         setContentView(list)
+        title = getString(if (gamepad) R.string.pref_gamepad_map else R.string.pref_physical_keymap)
         refresh()
         list.setOnItemClickListener { _, _, position, _ -> onItemSelected(position) }
     }
-
-    override fun onSupportNavigateUp(): Boolean { finish(); return true }
 
     private fun targets(): List<Pair<String, Any>> {
         val items = ArrayList<Pair<String, Any>>()

@@ -2,27 +2,21 @@ package dev.stefan.acpc.ui.settings
 
 import android.content.Intent
 import android.os.Bundle
-import androidx.appcompat.app.AppCompatActivity
+import dev.stefan.acpc.ui.common.ToolbarActivity
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import dev.stefan.acpc.R
 import dev.stefan.acpc.ui.roms.RomSetupActivity
 
-class SettingsActivity : AppCompatActivity() {
+class SettingsActivity : ToolbarActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_settings)
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
         if (savedInstanceState == null) {
             supportFragmentManager.beginTransaction()
                 .replace(R.id.settings_container, SettingsFragment())
                 .commit()
         }
-    }
-
-    override fun onSupportNavigateUp(): Boolean {
-        finish()
-        return true
     }
 
     class SettingsFragment : PreferenceFragmentCompat() {
