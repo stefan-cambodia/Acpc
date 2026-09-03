@@ -66,6 +66,7 @@ class EmulatorActivity : AppCompatActivity() {
     }
     private var hatX = 0
     private var hatY = 0
+    private var backPressed = false
 
     private val openDisk = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) insertDiskFromUri(uri)
@@ -322,7 +323,19 @@ class EmulatorActivity : AppCompatActivity() {
         val e = session?.emulator ?: return super.dispatchKeyEvent(event)
         val code = event.keyCode
         if (code == KeyEvent.KEYCODE_BACK) {
-            if (event.action == KeyEvent.ACTION_UP) showMenu()
+            // Open the menu only for a complete press seen by us: when the soft
+            // keyboard is showing, it consumes the key-down and we would
+            // otherwise react to the stray key-up.
+            when (event.action) {
+                KeyEvent.ACTION_DOWN -> backPressed = true
+                KeyEvent.ACTION_UP -> {
+                    val complete = backPressed
+                    backPressed = false
+                    if (complete && !event.isCanceled) {
+                        if (binding.textInput.hasFocus()) hideSystemKeyboard() else showMenu()
+                    }
+                }
+            }
             return true
         }
         if (code == KeyEvent.KEYCODE_VOLUME_UP || code == KeyEvent.KEYCODE_VOLUME_DOWN) return super.dispatchKeyEvent(event)
