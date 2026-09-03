@@ -36,7 +36,6 @@ import dev.stefan.acpc.input.GamepadMapper
 import dev.stefan.acpc.input.JoystickOverlayView
 import dev.stefan.acpc.input.KeyMapper
 import dev.stefan.acpc.input.OverlayLayout
-import dev.stefan.acpc.input.PhysicalKeyQueue
 import dev.stefan.acpc.input.VirtualKeyboardView
 import dev.stefan.acpc.settings.AppSettings
 import dev.stefan.acpc.storage.GameLibrary
@@ -61,9 +60,8 @@ class EmulatorActivity : AppCompatActivity() {
     private val pressedPhysical = HashSet<Int>()
     private val physicalStrokes = HashMap<Int, KeyMapper.Stroke>()
     private var physicalShiftCount = 0
-    private val keyQueue by lazy {
-        PhysicalKeyQueue(handler, { k -> session?.emulator?.pressKey(k) }, { k -> session?.emulator?.releaseKey(k) })
-    }
+    /** Typed keys go through the core's frame-paced queue so software always sees them. */
+    private fun queueKey(key: CpcKey, pressed: Boolean) { session?.emulator?.queueKey(key, pressed) }
     private var hatX = 0
     private var hatY = 0
     private var backPressed = false
@@ -188,9 +186,7 @@ class EmulatorActivity : AppCompatActivity() {
                 session?.emulator?.setJoystick(0, if (button == 1) JoystickButton.FIRE1 else JoystickButton.FIRE2, pressed)
             }
 
-            override fun onExtraKey(key: CpcKey, pressed: Boolean) {
-                session?.emulator?.let { if (pressed) it.pressKey(key) else it.releaseKey(key) }
-            }
+            override fun onExtraKey(key: CpcKey, pressed: Boolean) = queueKey(key, pressed)
 
             override fun onLayoutChanged(layout: OverlayLayout) {
                 overlayLayouts[settings.overlayProfile] = layout
@@ -201,8 +197,8 @@ class EmulatorActivity : AppCompatActivity() {
 
     private fun setupKeyboard() {
         binding.keyboard.listener = object : VirtualKeyboardView.Listener {
-            override fun onKeyDown(key: CpcKey) { session?.emulator?.pressKey(key) }
-            override fun onKeyUp(key: CpcKey) { session?.emulator?.releaseKey(key) }
+            override fun onKeyDown(key: CpcKey) = queueKey(key, true)
+            override fun onKeyUp(key: CpcKey) = queueKey(key, false)
         }
         binding.keyboard.visibility = View.GONE
     }
@@ -269,7 +265,6 @@ class EmulatorActivity : AppCompatActivity() {
         handler.removeCallbacks(debugUpdater)
         val s = session ?: return
         s.pause()
-        keyQueue.releaseAll()
         pressedPhysical.clear()
         physicalStrokes.clear()
         physicalShiftCount = 0
@@ -362,18 +357,18 @@ class EmulatorActivity : AppCompatActivity() {
                 val shiftHeld = physicalShiftCount > 0
                 // Character-mapped symbols need the CPC SHIFT state of the CPC
                 // layout, not the one of the PC layout: adjust it around the key.
-                if (stroke.shift && !shiftHeld) keyQueue.keyDown(CpcKey.SHIFT)
-                if (stroke.charMapped && !stroke.shift && shiftHeld) keyQueue.keyUp(CpcKey.SHIFT)
-                keyQueue.keyDown(stroke.key)
+                if (stroke.shift && !shiftHeld) queueKey(CpcKey.SHIFT, true)
+                if (stroke.charMapped && !stroke.shift && shiftHeld) queueKey(CpcKey.SHIFT, false)
+                queueKey(stroke.key, true)
             }
             KeyEvent.ACTION_UP -> {
                 if (!pressedPhysical.remove(code)) return super.dispatchKeyEvent(event)
                 val stroke = physicalStrokes.remove(code) ?: return true
                 if (code == KeyEvent.KEYCODE_SHIFT_LEFT || code == KeyEvent.KEYCODE_SHIFT_RIGHT) physicalShiftCount = (physicalShiftCount - 1).coerceAtLeast(0)
-                keyQueue.keyUp(stroke.key)
+                queueKey(stroke.key, false)
                 val shiftHeld = physicalShiftCount > 0
-                if (stroke.shift && !shiftHeld) keyQueue.keyUp(CpcKey.SHIFT)
-                if (stroke.charMapped && !stroke.shift && shiftHeld) keyQueue.keyDown(CpcKey.SHIFT)
+                if (stroke.shift && !shiftHeld) queueKey(CpcKey.SHIFT, false)
+                if (stroke.charMapped && !stroke.shift && shiftHeld) queueKey(CpcKey.SHIFT, true)
             }
         }
         return true
@@ -472,7 +467,6 @@ class EmulatorActivity : AppCompatActivity() {
     /** Power-cycles the CPC, releases every held input and re-runs the disc auto-start. */
     private fun performReset() {
         val s = session ?: return
-        keyQueue.releaseAll()
         binding.overlay.releaseAll()
         binding.keyboard.releaseAll()
         s.emulator.releaseAllKeys()

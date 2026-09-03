@@ -47,7 +47,8 @@ class CpcEmulator(
 
     override fun pressKey(key: CpcKey) = machine.keyboard.press(key)
     override fun releaseKey(key: CpcKey) = machine.keyboard.release(key)
-    override fun releaseAllKeys() = machine.keyboard.releaseAll()
+    override fun queueKey(key: CpcKey, pressed: Boolean) = machine.keyQueue.push(key, pressed)
+    override fun releaseAllKeys() = synchronized(lock) { machine.keyQueue.clear(); machine.keyboard.releaseAll() }
 
     override fun setJoystick(port: Int, button: JoystickButton, pressed: Boolean) =
         (if (port == 0) machine.joystick0 else machine.joystick1).setButton(button, pressed)

@@ -44,8 +44,17 @@ interface Emulator {
 
     // ---- Input -------------------------------------------------------------
 
+    /** Immediate matrix change (for held controls such as joystick-like keys). */
     fun pressKey(key: CpcKey)
     fun releaseKey(key: CpcKey)
+
+    /**
+     * Queued press/release, applied at frame boundaries with minimum hold and
+     * release durations so that the software always sees it (typing, taps).
+     */
+    fun queueKey(key: CpcKey, pressed: Boolean)
+
+    /** Releases every key, immediate and queued. */
     fun releaseAllKeys()
     fun setJoystick(port: Int, button: JoystickButton, pressed: Boolean)
     fun setJoystick(port: Int, up: Boolean, down: Boolean, left: Boolean, right: Boolean, fire1: Boolean, fire2: Boolean)

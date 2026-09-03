@@ -49,6 +49,12 @@ class LibraryActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Tapping the launcher icon while a game runs starts a second library
+        // screen on top of the emulator: step aside and reveal the game instead.
+        if (!isTaskRoot && EmulatorHolder.session != null && intent.action == Intent.ACTION_MAIN && intent.hasCategory(Intent.CATEGORY_LAUNCHER)) {
+            finish()
+            return
+        }
         binding = ActivityLibraryBinding.inflate(layoutInflater)
         setContentView(binding.root)
         library = GameLibrary(this)
@@ -89,6 +95,7 @@ class LibraryActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        if (!::binding.isInitialized) return
         refresh()
         val romStore = RomStore(this)
         binding.romWarning.visibility = if (romStore.canBoot(settings.model)) View.GONE else View.VISIBLE

@@ -10,6 +10,7 @@ import dev.stefan.acpc.core.crtc.Crtc
 import dev.stefan.acpc.core.fdc.Upd765
 import dev.stefan.acpc.core.gatearray.GateArray
 import dev.stefan.acpc.core.joystick.JoystickState
+import dev.stefan.acpc.core.keyboard.KeyQueue
 import dev.stefan.acpc.core.keyboard.KeyTyper
 import dev.stefan.acpc.core.keyboard.KeyboardMatrix
 import dev.stefan.acpc.core.memory.CpcMemory
@@ -48,6 +49,7 @@ class CpcMachine(
     val joystick0 = JoystickState(keyboard, 0)
     val joystick1 = JoystickState(keyboard, 1)
     val keyTyper = KeyTyper(keyboard)
+    val keyQueue = KeyQueue(keyboard)
     val fdc = Upd765()
 
     /**
@@ -95,6 +97,7 @@ class CpcMachine(
         ppi.reset()
         fdc.reset()
         keyTyper.clear()
+        keyQueue.clear()
         videoUs = 0
         audioUs = 0
         frameCount = 0
@@ -108,6 +111,7 @@ class CpcMachine(
      */
     fun runFrame(): VideoFrame {
         keyTyper.onFrame()
+        keyQueue.onFrame()
         val end = cpu.cycles + CpcTiming.TSTATES_PER_FRAME
         val cpu = this.cpu
         val hook = instructionHook
@@ -240,5 +244,6 @@ class CpcMachine(
         frameCount = frames
         psg.discardSamples()
         keyTyper.clear()
+        keyQueue.clear()
     }
 }
