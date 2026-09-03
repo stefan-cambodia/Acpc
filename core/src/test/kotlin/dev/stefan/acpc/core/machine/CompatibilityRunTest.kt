@@ -60,6 +60,13 @@ class CompatibilityRunTest {
         if (command != null) emu.typeText(command)
         val extra = File(diskDir, "$name.keys").takeIf { it.exists() }?.readText()
         val seconds = (File(diskDir, "$name.secs").takeIf { it.exists() }?.readText()?.trim()?.toIntOrNull()) ?: 40
+        // Nudges get past title screens and menus: sent one at a time when the
+        // picture has been static for a while and the disc is idle (`<name>.nonudge` disables them).
+        val nudges = if (File(diskDir, "$name.nonudge").exists()) emptyList() else listOf("SPACE", "FIRE", "RETURN", "1", "FIRE", "SPACE")
+        var nudgeIndex = 0
+        var staticSeconds = 0
+        var lastNudgeSecond = -100
+        val sent = ArrayList<String>()
         var frame: VideoFrame = emu.runFrame()
         val pcSamples = HashSet<Int>()
         var lastHash = 0
@@ -69,17 +76,31 @@ class CompatibilityRunTest {
             repeat(50) {
                 frame = emu.runFrame()
                 pcSamples += emu.machine.cpu.pc
+                if (it == 10) emu.setJoystick(0, dev.stefan.acpc.core.joystick.JoystickButton.FIRE1, false)
             }
             val h = frame.pixels.contentHashCode()
-            if (h != lastHash) changes++
+            if (h != lastHash) { changes++; staticSeconds = 0 } else staticSeconds++
             lastHash = h
             if (second == 8 && extra != null) emu.typeText(extra)
+            val discIdle = !emu.machine.fdc.motorOn
+            if (nudgeIndex < nudges.size && staticSeconds >= 3 && discIdle && second - lastNudgeSecond >= 6 && second > 10) {
+                val n = nudges[nudgeIndex++]
+                when (n) {
+                    "SPACE" -> emu.typeText(" ")
+                    "RETURN" -> emu.typeText("\n")
+                    "FIRE" -> emu.setJoystick(0, dev.stefan.acpc.core.joystick.JoystickButton.FIRE1, true)
+                    else -> emu.typeText(n)
+                }
+                sent += "$n@${second}s"
+                lastNudgeSecond = second
+                staticSeconds = 0
+            }
             if (second % 10 == 0 || second == seconds) savePng(frame, File(outDir, "$name-${second}s.png"))
         }
         val elapsed = (System.nanoTime() - start) / 1e9
         val info = emu.debugInfo()
-        return "%s: %ds emulated in %.1fs (%.0fx realtime), cmd=%s, distinct PCs=%d, frame changes=%d, mode=%d, fdc=%s".format(
-            name, seconds, elapsed, seconds / elapsed, command?.trim(), pcSamples.size, changes, info.gaMode, info.fdcStatus,
+        return "%s: %ds emulated in %.1fs (%.0fx realtime), cmd=%s, nudges=%s, distinct PCs=%d, frame changes=%d, mode=%d, fdc=%s".format(
+            name, seconds, elapsed, seconds / elapsed, command?.trim(), sent.joinToString(","), pcSamples.size, changes, info.gaMode, info.fdcStatus,
         )
     }
 

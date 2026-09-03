@@ -51,5 +51,16 @@ Run with:
 | Zaxon | menu text | |
 | DAMS (arkanoi3) | assembler prompt | not a game |
 
+## Past the title screen
+
+The harness also "nudges" a game whose picture has been static for three
+seconds while the drive is idle (Space, Fire, Return, "1", Fire, Space in
+turn; `<name>.nonudge` disables it). With 70 s runs this reached actual
+gameplay, rendered correctly, in Dizzy III, Harrier Attack, Nemesis, Prince
+of Persia and Robocop; Bubble Bobble, Fruity Frank, Bomb Jack and Rick
+Dangerous II reached their option menus; Commando reached its credits
+screen; Barbarian and Gryzor were still loading their second part at 70 s
+(loading pictures drawn progressively, drive active).
+
 Games verified interactively on a phone (played, not only booted): Live and
 Let Die (Domark), Sean McManus collection programs.
