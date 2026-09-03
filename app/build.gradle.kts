@@ -60,6 +60,10 @@ android {
         buildConfig = true
         viewBinding = true
     }
+
+    testOptions {
+        unitTests.all { it.useJUnitPlatform() }
+    }
 }
 
 dependencies {
@@ -77,4 +81,10 @@ dependencies {
     implementation(libs.androidx.preference.ktx)
     implementation(libs.material)
     implementation(libs.kotlinx.coroutines.android)
+
+    // Tests JVM de la couche réseau (parsing des listes de serveurs) : le
+    // vrai org.json remplace les stubs d'android.jar.
+    testImplementation(libs.junit.jupiter)
+    testImplementation(libs.json)
+    testRuntimeOnly(libs.junit.platform.launcher)
 }

@@ -54,6 +54,11 @@ object RemoteCatalog {
 
     private fun fetchArchiveOrg(url: String, item: String, subdir: String): Listing {
         val json = String(httpGet("https://archive.org/metadata/$item", MAX_HTML_BYTES), Charsets.UTF_8)
+        return Listing(url, parseArchiveMetadata(json, item, subdir), System.currentTimeMillis())
+    }
+
+    /** Parses the `files` array of an archive.org metadata document (pure function, unit-tested). */
+    fun parseArchiveMetadata(json: String, item: String, subdir: String): List<RemoteFile> {
         val files = runCatching { JSONObject(json).optJSONArray("files") ?: JSONArray() }
             .getOrElse { throw ListingException("Réponse archive.org illisible") }
         val prefix = if (subdir.isEmpty()) "" else "$subdir/"
@@ -74,7 +79,7 @@ object RemoteCatalog {
                 result[fileUrl] = RemoteFile(rest, fileUrl, f.optString("size").toLongOrNull() ?: -1, false)
             }
         }
-        return Listing(url, sorted(result.values), System.currentTimeMillis())
+        return sorted(result.values)
     }
 
     private fun encodePath(path: String): String =
@@ -86,10 +91,19 @@ object RemoteCatalog {
 
     private fun fetchHtmlIndex(url: String): Listing {
         val (html, finalUrl) = httpGetWithUrl(url, MAX_HTML_BYTES)
+        return Listing(url, parseHtmlIndex(String(html, Charsets.UTF_8), finalUrl), System.currentTimeMillis())
+    }
+
+    /**
+     * Extracts the disc images and sub-directories linked from a directory
+     * index page. Only direct children of [finalUrl] are kept, so parent
+     * links, sort links (`?C=M;O=D`) and external links are ignored.
+     */
+    fun parseHtmlIndex(html: String, finalUrl: String): List<RemoteFile> {
         val baseText = if (finalUrl.endsWith("/")) finalUrl else "$finalUrl/"
         val base = URL(baseText)
         val result = LinkedHashMap<String, RemoteFile>()
-        for (m in HREF.findAll(String(html, Charsets.UTF_8))) {
+        for (m in HREF.findAll(html)) {
             val href = (m.groupValues[1].ifEmpty { m.groupValues[2] }).trim()
             if (href.isEmpty() || href.startsWith("#") || href.startsWith("?") || href.startsWith("mailto:") || href.startsWith("javascript:")) continue
             val resolved = runCatching { URL(base, href).toString() }.getOrNull() ?: continue
@@ -107,7 +121,7 @@ object RemoteCatalog {
                 result.getOrPut(cleanUrl) { RemoteFile(name, cleanUrl, -1, false) }
             }
         }
-        return Listing(url, sorted(result.values), System.currentTimeMillis())
+        return sorted(result.values)
     }
 
     private fun sorted(files: Collection<RemoteFile>): List<RemoteFile> =
