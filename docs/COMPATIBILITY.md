@@ -78,12 +78,36 @@ Let Die (Domark), Sean McManus collection programs.
 `TapeIntegrationTest` (slow) loads every `.cdt` in `~/.acpc/tapes` (Gradle
 property `tapeDir`) on a CPC 464: `|TAPE` when AMSDOS is present, `RUN"`, a
 key for "Press PLAY then any key", then runs at full speed until the tape
-ends or the motor stays off for 12 s, and saves screenshots to
-`compatOut/tapes`. Results with the "Amstrad CPC CDT Collection" on
-archive.org (UK originals):
+ends or the motor stays off for 30 s, and saves screenshots to
+`compatOut/tapes`. The idle limit has to be that long: BASIC loaders draw
+their loading picture with the motor off for up to 20 s before they load the
+next file (Fruity Frank, Manic Miner, Le Monde). Results with the "Amstrad
+CPC CDT Collection" on archive.org (UK originals):
 
 | Tape | Result |
 |------|--------|
-| Arkanoid, Barbarian (both sides), Batman, Bubble Bobble (both sides), Chuckie Egg, Commando, Cybernoid, Dizzy Dice, Elite, Ghosts 'n Goblins, Harrier Attack, Head over Heels, Jet Set Willy, Nemesis, Oh Mummy (two releases), Renegade, Rick Dangerous, Robocop, Roland on the Ropes, Sorcery, Target Renegade side A, Ninja Grannies | loads to the title or menu; Speedlock-style loaders with border stripes included |
+| Arkanoid, Barbarian (both sides), Batman, Bubble Bobble (both sides), Chuckie Egg, Commando, Cybernoid, Dizzy Dice, Elite, Ghosts 'n Goblins, Harrier Attack, Head over Heels, Jet Set Willy, Nemesis, Oh Mummy (two releases), Renegade, Rick Dangerous, Robocop, Roland on the Ropes, Sorcery, Target Renegade side A, Ninja Grannies | loads to the title or menu (Renegade into the game); Speedlock loaders with border stripes included. Multi-load tapes (Arkanoid, Renegade, Robocop, Sorcery, Target Renegade) stop at their menu with the tape half read, as they should |
+| Manic Miner (MAD re-release), Fruity Frank, Le Monde | title, speed menu, intro: the BASIC loader draws for 13 to 20 s with the motor off, then loads the rest |
 | Target Renegade side B | "Read error b": a level-data tape, not meant to be started with `RUN"` |
-| Manic Miner (MAD re-release), Gryzor, Fruity Frank, Le Monde | first part loads, then the motor stays off: to be checked (waiting for a key, or a loader detail) |
+| Gryzor | the Speedlock loader wipes memory at the end of its second block: defective image, see below |
+
+### Gryzor: a mistimed image
+
+`TapeTraceTest` (a diagnostic, driven by environment variables, see its
+KDoc) showed where Gryzor fails. The Ocean Speedlock loader reads a bit by
+counting iterations of a 15 µs polling loop between two edges and compares
+the count with a fixed threshold (`LD A,&C0 / CP H`, counter started at
+&A1: a "1" needs more than 31 iterations). Bubble Bobble and Robocop, which
+load, use the very same loader with data pulses of 753/1508 TZX T-states:
+a "1" then counts about 46 iterations and a "0" about 18, the threshold
+sits in the middle. The Gryzor image carries the same loader but its data
+blocks are written with the Spectrum Speedlock values, 565/1130 (4/3
+shorter), while its pilot, sync and separator pulses are the same canonical
+values as in the other two tapes. A "1" then counts 32 to 34 iterations,
+one above the threshold; the first bit after the 208th sub-block separator,
+where the loader has more work between edges, counts exactly 31 and reads
+as 0. The loader's XOR checksum of the block fails and it wipes memory,
+which is the black screen. The image's own XOR over every block is zero,
+so the bytes are right and only the timing is wrong; a real machine would
+fail on such a signal too. Nothing to fix in the emulator: Z80 timings
+(`Z80CpcTimingTest`) and the edge stream are correct.

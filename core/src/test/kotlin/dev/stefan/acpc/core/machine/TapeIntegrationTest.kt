@@ -67,8 +67,10 @@ class TapeIntegrationTest {
             // A player would press a key at a prompt: nudge after 4 s and 8 s of idle motor.
             if (!status.atEnd && idleSeconds == 4) { emu.typeText(" "); nudges++ }
             if (!status.atEnd && idleSeconds == 8) { emu.machine.keyTyper.typeKey(dev.stefan.acpc.core.keyboard.CpcKey.RETURN); nudges++ }
-            // Loaded: tape at its end, or the motor left off for 12 s after some loading (loaders pause it between blocks).
-            if (loadedAt < 0 && (status.atEnd || (idleSeconds >= 12 && status.positionSeconds > 5))) loadedAt = second
+            // Loaded: tape at its end, or the motor left off for 30 s after some loading. Loaders pause it
+            // between blocks, and BASIC loaders draw their picture with the motor off for up to 20 s
+            // (Fruity Frank, Manic Miner, Le Monde) before loading the next file.
+            if (loadedAt < 0 && (status.atEnd || (idleSeconds >= 30 && status.positionSeconds > 5))) loadedAt = second
             if (second % 60 == 0) CompatibilityRunTest.savePng(frame, File(outDir, "$name-${second}s.png"))
             if (loadedAt > 0 && second >= loadedAt + 15) break
         }
