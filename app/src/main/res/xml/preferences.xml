@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <PreferenceCategory android:title="@string/pref_category_machine">
+        <ListPreference
+            android:key="cpc_model"
+            android:title="@string/pref_model_title"
+            android:entries="@array/cpc_model_entries"
+            android:entryValues="@array/cpc_model_values"
+            android:defaultValue="CPC6128"
+            android:summary="%s" />
+        <ListPreference
+            android:key="crtc_type"
+            android:title="@string/pref_crtc_title"
+            android:entries="@array/crtc_entries"
+            android:entryValues="@array/crtc_values"
+            android:defaultValue="TYPE0_HD6845S"
+            android:summary="%s" />
+        <ListPreference
+            android:key="speed_percent"
+            android:title="@string/pref_speed_title"
+            android:entries="@array/speed_entries"
+            android:entryValues="@array/speed_values"
+            android:defaultValue="100"
+            android:summary="%s" />
+        <SwitchPreferenceCompat
+            android:key="auto_start"
+            android:title="@string/pref_autostart_title"
+            android:summary="@string/pref_autostart_summary"
+            android:defaultValue="true" />
+        <SwitchPreferenceCompat
+            android:key="fast_disc"
+            android:title="@string/pref_fast_disc_title"
+            android:summary="@string/pref_fast_disc_summary"
+            android:defaultValue="false" />
+        <Preference
+            android:key="roms_setup"
+            android:title="@string/pref_roms_title"
+            android:summary="@string/pref_roms_summary" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/pref_category_display">
+        <ListPreference
+            android:key="screen_orientation"
+            android:title="@string/pref_orientation_title"
+            android:entries="@array/orientation_entries"
+            android:entryValues="@array/orientation_values"
+            android:defaultValue="AUTO"
+            android:summary="%s" />
+        <ListPreference
+            android:key="scaling_mode"
+            android:title="@string/pref_scaling_title"
+            android:entries="@array/scaling_entries"
+            android:entryValues="@array/scaling_values"
+            android:defaultValue="FIT"
+            android:summary="%s" />
+        <SwitchPreferenceCompat
+            android:key="scanlines"
+            android:title="@string/pref_scanlines_title"
+            android:defaultValue="false" />
+        <SwitchPreferenceCompat
+            android:key="smoothing"
+            android:title="@string/pref_smoothing_title"
+            android:defaultValue="false" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/pref_category_audio">
+        <SeekBarPreference
+            android:key="volume"
+            android:title="@string/pref_volume_title"
+            android:max="100"
+            android:defaultValue="80"
+            app:showSeekBarValue="true" />
+        <SwitchPreferenceCompat
+            android:key="muted"
+            android:title="@string/pref_muted_title"
+            android:defaultValue="false" />
+        <ListPreference
+            android:key="audio_latency"
+            android:title="@string/pref_latency_title"
+            android:entries="@array/latency_entries"
+            android:entryValues="@array/latency_values"
+            android:defaultValue="4"
+            android:summary="%s" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/pref_category_controls">
+        <SwitchPreferenceCompat
+            android:key="show_joystick"
+            android:title="@string/pref_show_joystick_title"
+            android:defaultValue="true" />
+        <SeekBarPreference
+            android:key="overlay_opacity"
+            android:title="@string/pref_overlay_opacity_title"
+            android:max="100"
+            android:defaultValue="55"
+            app:showSeekBarValue="true" />
+        <SeekBarPreference
+            android:key="overlay_scale"
+            android:title="@string/pref_overlay_scale_title"
+            android:max="160"
+            android:min="50"
+            android:defaultValue="100"
+            app:showSeekBarValue="true" />
+        <SeekBarPreference
+            android:key="keyboard_height"
+            android:title="@string/pref_keyboard_height_title"
+            android:max="60"
+            android:min="20"
+            android:defaultValue="40"
+            app:showSeekBarValue="true" />
+        <SwitchPreferenceCompat
+            android:key="haptic"
+            android:title="@string/pref_haptic_title"
+            android:defaultValue="true" />
+        <Preference
+            android:key="physical_keymap_edit"
+            android:title="@string/pref_physical_keymap"
+            android:summary="@string/pref_physical_keymap_summary" />
+        <Preference
+            android:key="gamepad_map_edit"
+            android:title="@string/pref_gamepad_map"
+            android:summary="@string/pref_gamepad_map_summary" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/pref_category_developer">
+        <SwitchPreferenceCompat
+            android:key="developer_overlay"
+            android:title="@string/pref_dev_overlay_title"
+            android:summary="@string/pref_dev_overlay_summary"
+            android:defaultValue="false" />
+    </PreferenceCategory>
+</PreferenceScreen>

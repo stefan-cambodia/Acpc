@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="cpc_model_entries">
+        <item>Amstrad CPC 464</item>
+        <item>Amstrad CPC 664</item>
+        <item>Amstrad CPC 6128</item>
+    </string-array>
+    <string-array name="cpc_model_values">
+        <item>CPC464</item>
+        <item>CPC664</item>
+        <item>CPC6128</item>
+    </string-array>
+    <string-array name="crtc_entries">
+        <item>Type 0 — Hitachi HD6845S</item>
+        <item>Type 1 — UMC UM6845R</item>
+    </string-array>
+    <string-array name="crtc_values">
+        <item>TYPE0_HD6845S</item>
+        <item>TYPE1_UM6845R</item>
+    </string-array>
+    <string-array name="speed_entries">
+        <item>50 %</item>
+        <item>100 % (CPC réel)</item>
+        <item>150 %</item>
+        <item>200 %</item>
+        <item>400 %</item>
+    </string-array>
+    <string-array name="speed_values">
+        <item>50</item>
+        <item>100</item>
+        <item>150</item>
+        <item>200</item>
+        <item>400</item>
+    </string-array>
+    <string-array name="orientation_entries">
+        <item>@string/orientation_auto</item>
+        <item>@string/orientation_system</item>
+        <item>@string/orientation_landscape</item>
+        <item>@string/orientation_portrait</item>
+    </string-array>
+    <string-array name="orientation_values">
+        <item>AUTO</item>
+        <item>SYSTEM</item>
+        <item>LANDSCAPE</item>
+        <item>PORTRAIT</item>
+    </string-array>
+    <string-array name="scaling_entries">
+        <item>@string/scaling_fit</item>
+        <item>@string/scaling_integer</item>
+        <item>@string/scaling_stretch</item>
+        <item>@string/scaling_pixel_perfect</item>
+    </string-array>
+    <string-array name="scaling_values">
+        <item>FIT</item>
+        <item>INTEGER</item>
+        <item>STRETCH</item>
+        <item>PIXEL_PERFECT</item>
+    </string-array>
+    <string-array name="latency_entries">
+        <item>40 ms</item>
+        <item>60 ms</item>
+        <item>80 ms</item>
+        <item>120 ms</item>
+        <item>200 ms</item>
+    </string-array>
+    <string-array name="latency_values">
+        <item>2</item>
+        <item>3</item>
+        <item>4</item>
+        <item>6</item>
+        <item>10</item>
+    </string-array>
+</resources>

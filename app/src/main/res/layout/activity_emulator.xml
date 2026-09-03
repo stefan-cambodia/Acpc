@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/cpc_black"
+    android:focusable="true"
+    android:focusableInTouchMode="true">
+
+    <dev.stefan.acpc.video.CpcSurfaceView
+        android:id="@+id/surface"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <dev.stefan.acpc.input.JoystickOverlayView
+        android:id="@+id/overlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <TextView
+        android:id="@+id/debug_overlay"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|start"
+        android:background="#80000000"
+        android:fontFamily="monospace"
+        android:paddingStart="8dp"
+        android:paddingTop="4dp"
+        android:paddingEnd="8dp"
+        android:paddingBottom="4dp"
+        android:textColor="#FF00FF00"
+        android:textSize="10sp"
+        android:visibility="gone" />
+
+    <!-- Invisible text field: receives the Android soft keyboard input and
+         forwards it to the CPC (long press on the keyboard button). -->
+    <EditText
+        android:id="@+id/text_input"
+        android:layout_width="1dp"
+        android:layout_height="1dp"
+        android:layout_gravity="bottom|start"
+        android:alpha="0"
+        android:background="@android:color/transparent"
+        android:cursorVisible="false"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:imeOptions="flagNoExtractUi|flagNoFullscreen"
+        android:importantForAccessibility="no"
+        android:importantForAutofill="no"
+        android:inputType="textMultiLine|textNoSuggestions|textVisiblePassword"
+        android:textColor="@android:color/transparent" />
+
+    <LinearLayout
+        android:id="@+id/quick_bar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|end"
+        android:layout_marginTop="10dp"
+        android:orientation="horizontal"
+        android:padding="6dp">
+
+        <ImageButton
+            android:id="@+id/button_keyboard"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:alpha="0.6"
+            android:background="@drawable/bg_round_button"
+            android:contentDescription="@string/menu_keyboard"
+            android:src="@drawable/ic_keyboard"
+            android:tint="@color/cpc_white" />
+
+        <ImageButton
+            android:id="@+id/button_reset"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:layout_marginStart="6dp"
+            android:alpha="0.6"
+            android:background="@drawable/bg_round_button"
+            android:contentDescription="@string/menu_reset"
+            android:src="@drawable/ic_reset"
+            android:tint="@color/cpc_white" />
+
+        <ImageButton
+            android:id="@+id/button_menu"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:layout_marginStart="6dp"
+            android:alpha="0.6"
+            android:background="@drawable/bg_round_button"
+            android:contentDescription="@string/menu_title"
+            android:src="@drawable/ic_menu"
+            android:tint="@color/cpc_white" />
+    </LinearLayout>
+
+    <dev.stefan.acpc.input.VirtualKeyboardView
+        android:id="@+id/keyboard"
+        android:layout_width="match_parent"
+        android:layout_height="220dp"
+        android:layout_gravity="bottom"
+        android:visibility="gone" />
+</FrameLayout>

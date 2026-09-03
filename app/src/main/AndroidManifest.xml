@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+    <uses-feature android:name="android.hardware.gamepad" android:required="false" />
+    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+
+    <application
+        android:name=".AcpcApplication"
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:usesCleartextTraffic="true"
+        android:theme="@style/Theme.Acpc">
+
+        <activity
+            android:name=".ui.library.LibraryActivity"
+            android:exported="true"
+            android:launchMode="singleTop">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- Ouvrir un .dsk depuis un gestionnaire de fichiers -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="content" />
+                <data android:scheme="file" />
+                <data android:mimeType="*/*" />
+                <data android:host="*" />
+                <data android:pathPattern=".*\\.dsk" />
+                <data android:pathPattern=".*\\.DSK" />
+                <data android:pathPattern=".*\\..*\\.dsk" />
+                <data android:pathPattern=".*\\..*\\.DSK" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".ui.emulator.EmulatorActivity"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|keyboard|navigation|uiMode|smallestScreenSize"
+            android:exported="false"
+            android:launchMode="singleTop"
+            android:screenOrientation="fullUser"
+            android:theme="@style/Theme.Acpc.Emulator"
+            android:windowSoftInputMode="stateAlwaysHidden|adjustNothing" />
+
+        <activity
+            android:name=".ui.library.RemoteBrowserActivity"
+            android:exported="false"
+            android:label="@string/library_remote"
+            android:parentActivityName=".ui.library.LibraryActivity"
+            android:theme="@style/Theme.Acpc.WithActionBar" />
+
+        <activity
+            android:name=".ui.settings.SettingsActivity"
+            android:exported="false"
+            android:label="@string/title_settings"
+            android:theme="@style/Theme.Acpc.WithActionBar" />
+
+        <activity
+            android:name=".ui.settings.KeyMappingActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Acpc.WithActionBar" />
+
+        <activity
+            android:name=".ui.roms.RomSetupActivity"
+            android:exported="false"
+            android:label="@string/pref_roms_title"
+            android:theme="@style/Theme.Acpc.WithActionBar" />
+    </application>
+</manifest>

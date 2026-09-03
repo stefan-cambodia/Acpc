@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="speed_entries">
+        <item>50 %</item>
+        <item>100 % (real CPC)</item>
+        <item>150 %</item>
+        <item>200 %</item>
+        <item>400 %</item>
+    </string-array>
+</resources>

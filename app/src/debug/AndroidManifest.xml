@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Build debug uniquement : permet d'afficher l'application par-dessus l'écran
+     de verrouillage pour les tests automatisés via adb (captures d'écran). -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <application>
+        <activity
+            android:name=".ui.library.LibraryActivity"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true"
+            tools:node="merge" />
+        <activity
+            android:name=".ui.emulator.EmulatorActivity"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true"
+            tools:node="merge" />
+        <activity
+            android:name=".ui.settings.SettingsActivity"
+            android:showWhenLocked="true"
+            tools:node="merge" />
+        <activity
+            android:name=".ui.roms.RomSetupActivity"
+            android:showWhenLocked="true"
+            tools:node="merge" />
+    </application>
+</manifest>

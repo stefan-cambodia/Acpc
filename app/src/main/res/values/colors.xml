@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Palette inspired by the CPC: blue background, bright yellow text. -->
+    <color name="cpc_blue">#FF000080</color>
+    <color name="cpc_blue_dark">#FF00003A</color>
+    <color name="cpc_yellow">#FFFFFF00</color>
+    <color name="cpc_cyan">#FF00FFFF</color>
+    <color name="cpc_white">#FFFFFFFF</color>
+    <color name="cpc_black">#FF000000</color>
+    <color name="overlay_control">#66FFFFFF</color>
+</resources>

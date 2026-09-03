@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Stylised CPC: yellow monitor frame and "A" glyph -->
+    <path
+        android:fillColor="#FFFFFF00"
+        android:pathData="M24,30 h60 v42 h-60 z M30,36 v30 h48 v-30 z" />
+    <path
+        android:fillColor="#FF00FFFF"
+        android:pathData="M46,64 l8,-24 l8,24 h-5 l-1.5,-5 h-7 l-1.5,5 z M50,55 h4 l-2,-7 z" />
+    <path
+        android:fillColor="#FFFFFF00"
+        android:pathData="M36,76 h36 v6 h-36 z" />
+</vector>

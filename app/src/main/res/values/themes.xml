@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Acpc" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="colorPrimary">@color/cpc_yellow</item>
+        <item name="colorOnPrimary">@color/cpc_black</item>
+        <item name="colorSecondary">@color/cpc_cyan</item>
+        <item name="android:colorBackground">@color/cpc_blue</item>
+        <item name="colorSurface">@color/cpc_blue_dark</item>
+        <item name="android:statusBarColor">@color/cpc_blue_dark</item>
+        <item name="android:navigationBarColor">@color/cpc_blue_dark</item>
+    </style>
+
+    <style name="Theme.Acpc.Emulator">
+        <item name="android:windowBackground">@color/cpc_black</item>
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
+    </style>
+
+    <style name="Theme.Acpc.WithActionBar" parent="Theme.Material3.Dark">
+        <item name="colorPrimary">@color/cpc_yellow</item>
+        <item name="colorOnPrimary">@color/cpc_black</item>
+        <item name="android:colorBackground">@color/cpc_blue</item>
+        <item name="colorSurface">@color/cpc_blue_dark</item>
+    </style>
+</resources>
