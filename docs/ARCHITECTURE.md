@@ -55,6 +55,7 @@ the register masks and read-back rules of the emulated CRTC variant.
 | `fdc`        | `Upd765`, `FloppyDrive` | uPD765A command/execution/result phases, seek and rotation timing, overrun handling for copy-protected loaders, deleted data and CRC status from the image. |
 | `disk`       | `DiskImage`, `AmsdosCatalog` | Standard and extended DSK parsing and export, AMSDOS catalogue listing, format detection and auto-start command selection. |
 | `state`      | `StateCodec`    | Tagged binary save-state format (tag, length, payload), deflate-compressed, tolerant of unknown sections. |
+| `tape`       | `CdtFormat`, `Tape` | CDT/TZX tape images turned into an edge timeline in CPC cycles (blocks 10-15, 20-28, 2A-35, loops); `Tape` plays it against the CPU clock while the PPI motor relay is on and feeds PPI port B bit 7, so both the firmware loader and custom loaders work. |
 | `snapshot`   | `SnaFormat`     | The standard CPC `.sna` snapshot format, versions 1 to 3 (including v3 compressed `MEM` chunks): loads into a reset machine through the chips' normal write paths, and writes version 2 snapshots. |
 
 ### Tests — `core/src/test`

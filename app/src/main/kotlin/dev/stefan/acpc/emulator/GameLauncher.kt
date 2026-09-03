@@ -50,6 +50,8 @@ object GameLauncher {
             try {
                 if (entry.isSnapshot) {
                     session.loadSnapshot(bytes)
+                } else if (entry.isTape) {
+                    session.insertTape(bytes, entry.title, entry.autoStart ?: settings.autoStart, resetFirst = true)
                 } else {
                     val autoStart = entry.autoStart ?: settings.autoStart
                     session.insertDisk(bytes, entry.title, autoStart, resetFirst = true)

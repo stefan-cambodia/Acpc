@@ -62,12 +62,26 @@ class CpcMachine(
     var cassetteMotor = false
         private set
 
+    /** The cassette in the recorder, if any. */
+    @Volatile var tape: dev.stefan.acpc.core.tape.Tape? = null
+        private set
+
+    fun insertTape(t: dev.stefan.acpc.core.tape.Tape?) {
+        tape?.setMotor(false, cpu.cycles)
+        tape = t
+        t?.lastCyclesHint = cpu.cycles
+        t?.setMotor(cassetteMotor, cpu.cycles)
+    }
+
     private val ppiInputs = object : Ppi8255.Inputs {
         override val vsync: Boolean get() = gateArray.vsyncActive
         override val manufacturerId: Int get() = model.manufacturerId
-        override val cassetteInput: Boolean get() = false
+        override val cassetteInput: Boolean get() = tape?.level(cpu.cycles) ?: false
         override fun onKeyboardLineSelected(line: Int) { keyboardLine = line }
-        override fun onCassetteMotor(on: Boolean) { cassetteMotor = on }
+        override fun onCassetteMotor(on: Boolean) {
+            cassetteMotor = on
+            tape?.let { it.lastCyclesHint = cpu.cycles; it.setMotor(on, cpu.cycles) }
+        }
     }
     val ppi = Ppi8255(psg, ppiInputs)
 
@@ -131,6 +145,7 @@ class CpcMachine(
         syncAudio()
         flushAudio()
         frameCount++
+        tape?.lastCyclesHint = cpu.cycles
         return gateArray.takeFrame()
     }
 

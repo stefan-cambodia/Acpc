@@ -42,6 +42,17 @@ interface Emulator {
     /** Returns the current image of the disk in [drive] (with any writes applied), or null. */
     fun exportDisk(drive: Int): ByteArray?
 
+    // ---- Tape --------------------------------------------------------------
+
+    /** Puts a CDT tape image in the recorder (rewound). Throws [dev.stefan.acpc.core.tape.InvalidTapeException]. */
+    fun insertTape(image: ByteArray, name: String = "tape.cdt")
+    fun ejectTape()
+    fun hasTape(): Boolean
+    fun rewindTape()
+
+    /** Tape position and length in seconds, and whether it is currently moving. */
+    fun tapeStatus(): TapeStatus?
+
     // ---- Input -------------------------------------------------------------
 
     /** Immediate matrix change (for held controls such as joystick-like keys). */
@@ -93,6 +104,8 @@ interface Emulator {
     /** Raw 64 KB of base RAM (for tests and debugging tools). */
     fun peekRam(address: Int): Int
 }
+
+class TapeStatus(val name: String, val positionSeconds: Float, val lengthSeconds: Float, val moving: Boolean, val atEnd: Boolean)
 
 /** Snapshot of diagnostic values, filled by [Emulator.debugInfo]. */
 data class DebugInfo(

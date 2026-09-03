@@ -280,6 +280,7 @@ class EmulatorActivity : AppCompatActivity() {
         binding.overlay.releaseAll()
         binding.keyboard.releaseAll()
         hideSystemKeyboard()
+        s.flushDisk(library)
         // Keep a recovery point in case the process is killed in the background.
         runCatching { library.autoSaveFile().writeBytes(s.emulator.saveState()) }
     }
@@ -308,7 +309,7 @@ class EmulatorActivity : AppCompatActivity() {
                     info.gaMode, info.romConfig, info.ramConfig,
                     info.crtcRegisters[1], info.crtcRegisters[2], info.crtcRegisters[6], info.crtcRegisters[7], info.crtcRegisters[9],
                     info.crtcRegisters[12], info.crtcRegisters[13], info.fdcStatus,
-                )
+                ) + (s.emulator.tapeStatus()?.let { t -> "\nTAPE %s %.0f/%.0f s %s%s".format(java.util.Locale.US, t.name.take(24), t.positionSeconds, t.lengthSeconds, if (t.moving) "playing" else "stopped", if (s.tapeTurbo) " turbo" else "") } ?: "")
             }
             handler.postDelayed(this, 500)
         }
@@ -413,6 +414,7 @@ class EmulatorActivity : AppCompatActivity() {
             getString(R.string.menu_insert_disk),
             getString(R.string.menu_eject_disk),
             getString(R.string.menu_disk_files),
+            getString(R.string.menu_rewind_tape),
             getString(R.string.menu_reset),
             getString(R.string.menu_overlay_profile),
             getString(R.string.menu_edit_overlay),
@@ -431,19 +433,27 @@ class EmulatorActivity : AppCompatActivity() {
                     3 -> showStateSlots(save = true)
                     4 -> showStateSlots(save = false)
                     5 -> openDisk.launch(arrayOf("*/*"))
-                    6 -> { s.emulator.ejectDisk(0); s.currentEntry = null; toast(R.string.toast_disk_ejected); s.resume() }
+                    6 -> { s.flushDisk(library); s.emulator.ejectDisk(0); s.currentEntry = null; toast(R.string.toast_disk_ejected); s.resume() }
                     7 -> showDiskFiles()
-                    8 -> confirmReset()
-                    9 -> chooseOverlayProfile()
-                    10 -> { binding.overlay.editMode = true; toast(R.string.toast_edit_overlay); s.resume() }
-                    11 -> chooseOrientation()
-                    12 -> { settings.muted = !settings.muted; s.applySettings(); s.resume() }
-                    13 -> startActivity(Intent(this, SettingsActivity::class.java))
-                    14 -> quit()
+                    8 -> { rewindTape(); s.resume() }
+                    9 -> confirmReset()
+                    10 -> chooseOverlayProfile()
+                    11 -> { binding.overlay.editMode = true; toast(R.string.toast_edit_overlay); s.resume() }
+                    12 -> chooseOrientation()
+                    13 -> { settings.muted = !settings.muted; s.applySettings(); s.resume() }
+                    14 -> startActivity(Intent(this, SettingsActivity::class.java))
+                    15 -> quit()
                 }
             }
             .setOnCancelListener { s.resume() }
             .show()
+    }
+
+    private fun rewindTape() {
+        val s = session ?: return
+        if (!s.emulator.hasTape()) { toast(R.string.toast_no_tape); return }
+        s.emulator.rewindTape()
+        toast(R.string.toast_tape_rewound)
     }
 
     private fun confirmReset() {
@@ -469,6 +479,8 @@ class EmulatorActivity : AppCompatActivity() {
                 val bytes = library.diskFile(entry).readBytes()
                 if (entry.isSnapshot) {
                     s.loadSnapshot(bytes)                       // back to the snapshot's starting point
+                } else if (entry.isTape) {
+                    s.insertTape(bytes, entry.title, entry.autoStart ?: settings.autoStart, resetFirst = true)
                 } else {
                     // Re-run the auto-start on the inserted disc.
                     val autoStart = entry.autoStart ?: settings.autoStart
@@ -485,6 +497,7 @@ class EmulatorActivity : AppCompatActivity() {
         AlertDialog.Builder(this)
             .setMessage(R.string.confirm_quit)
             .setPositiveButton(R.string.action_quit) { _, _ ->
+                s.flushDisk(library)
                 s.frameListener = null
                 EmulatorHolder.stop()
                 finish()
@@ -534,6 +547,7 @@ class EmulatorActivity : AppCompatActivity() {
             runOnUiThread {
                 result.onSuccess { entry ->
                     try {
+                        s.flushDisk(library)
                         val bytes = library.diskFile(entry).readBytes()
                         s.insertDisk(bytes, entry.title, autoStart = false, resetFirst = false)
                         s.currentEntry = entry

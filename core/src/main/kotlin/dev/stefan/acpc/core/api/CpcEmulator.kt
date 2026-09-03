@@ -43,6 +43,20 @@ class CpcEmulator(
 
     override fun exportDisk(drive: Int): ByteArray? = synchronized(lock) { machine.fdc.exportDisk(drive) }
 
+    // ---- Tape --------------------------------------------------------------
+
+    override fun insertTape(image: ByteArray, name: String) = synchronized(lock) {
+        machine.insertTape(dev.stefan.acpc.core.tape.Tape(dev.stefan.acpc.core.tape.CdtFormat.parse(image), name))
+    }
+
+    override fun ejectTape() = synchronized(lock) { machine.insertTape(null) }
+    override fun hasTape(): Boolean = machine.tape != null
+    override fun rewindTape() = synchronized(lock) { machine.tape?.rewind() ?: Unit }
+
+    override fun tapeStatus(): TapeStatus? = machine.tape?.let {
+        TapeStatus(it.name, it.position / 4_000_000f, it.lengthCycles / 4_000_000f, it.isMoving, it.atEnd)
+    }
+
     // ---- Input -------------------------------------------------------------
 
     override fun pressKey(key: CpcKey) = machine.keyboard.press(key)

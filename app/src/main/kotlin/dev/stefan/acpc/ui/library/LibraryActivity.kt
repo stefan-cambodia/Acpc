@@ -191,6 +191,17 @@ class LibraryActivity : AppCompatActivity() {
                             append(getString(R.string.details_played, entry.playCount))
                         }
                     }.getOrElse { getString(R.string.error_cannot_read_file) }
+                } else if (entry.isTape) {
+                    runCatching {
+                        val img = dev.stefan.acpc.core.tape.CdtFormat.parse(library.diskFile(entry).readBytes())
+                        buildString {
+                            append(getString(R.string.details_file, entry.fileName)).append('\n')
+                            append(getString(R.string.details_size, entry.size / 1024)).append('\n')
+                            append(getString(R.string.details_tape, img.blockStarts.size, (img.totalCycles / 4_000_000L / 60).toInt(), (img.totalCycles / 4_000_000L % 60).toInt())).append('\n')
+                            entry.sourceUrl?.let { append(getString(R.string.details_source, it)).append('\n') }
+                            append(getString(R.string.details_played, entry.playCount))
+                        }
+                    }.getOrElse { getString(R.string.error_cannot_read_file) }
                 } else runCatching {
                     val image = DskFormat.read(library.diskFile(entry).readBytes(), entry.title)
                     val format = AmsdosCatalog.detectFormat(image)

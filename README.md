@@ -7,8 +7,10 @@ controller and `.dsk` disc images. It is written in Kotlin with a pure JVM
 
 ## Features
 
-- Boots real Amstrad firmware, runs real games from `.dsk` disc images and
-  `.sna` snapshots (plain or zipped).
+- Boots real Amstrad firmware, runs real games from `.dsk` disc images,
+  `.cdt` tapes and `.sna` snapshots (plain or zipped). Tape loading can run
+  at full emulation speed while the motor turns.
+- Discs written by games (saved games, high scores) are kept.
 - Touch joystick and fire buttons with movable layouts, on-screen CPC keyboard,
   Android soft keyboard for text entry, Bluetooth/USB keyboards and gamepads.
 - Game library: local files, remote servers (any HTTP directory index or an
@@ -42,7 +44,7 @@ The Amstrad ROMs are not included. Import your own copies from the app
 ## Remote servers
 
 The **Remote server** button accepts either the direct URL of a `.dsk`,
-`.sna` or `.zip` file or the URL of a directory. Directories are listed in the app, with search;
+`.cdt`, `.sna` or `.zip` file or the URL of a directory. Directories are listed in the app, with search;
 one tap downloads, caches and starts the game. The default entry points to the
 [Amstrad CPC game collection by Ghostware](https://archive.org/download/AmstradCPCGameCollectionByGhostware)
 on archive.org.

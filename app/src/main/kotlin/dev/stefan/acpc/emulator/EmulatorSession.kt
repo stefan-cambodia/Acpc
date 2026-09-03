@@ -40,6 +40,7 @@ class EmulatorSession(
     }
 
     private val audio = AndroidAudioSink(AndroidAudioSink.preferredSampleRate(), settings.audioLatencyFrames)
+    private val hasAmsdos = roms.amsdosRom != null
     val emulator: CpcEmulator = CpcEmulator.createMachine(model, roms, audio, crtcType)
 
     @Volatile var frameListener: FrameListener? = null
@@ -127,6 +128,21 @@ class EmulatorSession(
         }
     }
 
+    /**
+     * Writes the disc in drive A back to its library file if the program
+     * wrote to it (saved games, high scores), like a real disc would keep them.
+     */
+    fun flushDisk(library: dev.stefan.acpc.storage.GameLibrary) {
+        val entry = currentEntry ?: return
+        if (entry.isSnapshot) return
+        val disk = emulator.machine.fdc.disk(0) ?: return
+        if (!disk.modified) return
+        val bytes = emulator.exportDisk(0) ?: return
+        runCatching { library.diskFile(entry).writeBytes(bytes) }
+            .onSuccess { disk.modified = false }
+            .onFailure { Log.w(TAG, "Cannot write disc back", it) }
+    }
+
     /** Loads a ".sna" snapshot: replaces the whole machine state (the disc stays in the drive). */
     fun loadSnapshot(bytes: ByteArray) {
         pendingAutoStart = null
@@ -134,6 +150,34 @@ class EmulatorSession(
         emulator.loadSnapshot(bytes)
     }
 
+    /**
+     * Puts a tape in the recorder and, with [autoStart], types the loading
+     * commands: `|TAPE` on machines with a disc interface, then `RUN"`, then
+     * a key for the firmware's "Press PLAY then any key" prompt.
+     */
+    fun insertTape(bytes: ByteArray, name: String, autoStart: Boolean, resetFirst: Boolean) {
+        if (resetFirst) {
+            emulator.reset()
+            emulator.releaseAllKeys()
+        }
+        emulator.insertTape(bytes, name)
+        if (autoStart) {
+            val now = emulator.machine.frameCount
+            val boot = if (resetFirst) 130L else 5L
+            val script = ArrayList<Pair<Long, String>>()
+            if (hasAmsdos) script += (now + boot) to "|tape\n"         // AMSDOS redirects RUN" to the disc
+            script += (now + boot + 25) to "run\"\n"
+            script += (now + boot + 75) to " "
+            pendingScript = script
+            pendingAutoStart = "RUN\""
+            autoStartAtFrame = Long.MAX_VALUE
+        }
+    }
+
+    /** True while the tape is turning and fast tape loading is on: the loop then runs unpaced. */
+    val tapeTurbo: Boolean get() = settings.fastTape && emulator.machine.tape?.isMoving == true
+
+    @Volatile private var pendingScript: List<Pair<Long, String>>? = null
     @Volatile private var pendingAutoStart: String? = null
     @Volatile private var autoStartAtFrame = 0L
 
@@ -162,13 +206,24 @@ class EmulatorSession(
                     pendingAutoStart = null
                     emulator.typeText(cmd)
                 }
+                pendingScript?.let { script ->
+                    val f = emulator.machine.frameCount
+                    val due = script.filter { it.first <= f }
+                    if (due.isNotEmpty()) {
+                        due.forEach { emulator.typeText(it.second) }
+                        val rest = script - due.toSet()
+                        pendingScript = rest.ifEmpty { null }
+                        if (rest.isEmpty()) pendingAutoStart = null
+                    }
+                }
                 emulator.runFrame()
             } catch (e: Throwable) {
                 Log.e(TAG, "Emulation error", e)
                 pause()
                 continue
             }
-            frameListener?.onFrame(frame)
+            val turbo = tapeTurbo
+            if (!turbo || statFrames % 5 == 0) frameListener?.onFrame(frame)
             val blocked = audio.blockedNanos
             audio.blockedNanos = 0
             val work = System.nanoTime() - start - blocked
@@ -178,8 +233,10 @@ class EmulatorSession(
             // available; otherwise sleep to real time. With a speed multiplier
             // other than 1 the audio buffer is disabled and we pace by clock.
             val useClock = !audio.available || speed != 1f
-            audio.enabled = speed == 1f
-            if (useClock) {
+            audio.enabled = speed == 1f && !turbo
+            if (turbo) {
+                nextFrameNs = System.nanoTime()
+            } else if (useClock) {
                 nextFrameNs += (frameNs / speed).toLong()
                 val now = System.nanoTime()
                 val sleep = nextFrameNs - now

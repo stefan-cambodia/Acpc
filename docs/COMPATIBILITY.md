@@ -72,3 +72,18 @@ second part at 70 s (loading pictures drawn progressively, drive active).
 
 Games verified interactively on a phone (played, not only booted): Live and
 Let Die (Domark), Sean McManus collection programs.
+
+## Tapes
+
+`TapeIntegrationTest` (slow) loads every `.cdt` in `~/.acpc/tapes` (Gradle
+property `tapeDir`) on a CPC 464: `|TAPE` when AMSDOS is present, `RUN"`, a
+key for "Press PLAY then any key", then runs at full speed until the tape
+ends or the motor stays off for 12 s, and saves screenshots to
+`compatOut/tapes`. Results with the "Amstrad CPC CDT Collection" on
+archive.org (UK originals):
+
+| Tape | Result |
+|------|--------|
+| Arkanoid, Barbarian (both sides), Batman, Bubble Bobble (both sides), Chuckie Egg, Commando, Cybernoid, Dizzy Dice, Elite, Ghosts 'n Goblins, Harrier Attack, Head over Heels, Jet Set Willy, Nemesis, Oh Mummy (two releases), Renegade, Rick Dangerous, Robocop, Roland on the Ropes, Sorcery, Target Renegade side A, Ninja Grannies | loads to the title or menu; Speedlock-style loaders with border stripes included |
+| Target Renegade side B | "Read error b": a level-data tape, not meant to be started with `RUN"` |
+| Manic Miner (MAD re-release), Gryzor, Fruity Frank, Le Monde | first part loads, then the motor stays off: to be checked (waiting for a key, or a loader detail) |

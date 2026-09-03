@@ -35,6 +35,7 @@ class AppSettings(context: Context) {
 
     val autoStart: Boolean get() = prefs.getBoolean(KEY_AUTOSTART, true)
     val fastDisc: Boolean get() = prefs.getBoolean(KEY_FAST_DISC, false)
+    val fastTape: Boolean get() = prefs.getBoolean(KEY_FAST_TAPE, true)
 
     val showJoystick: Boolean get() = prefs.getBoolean(KEY_SHOW_JOYSTICK, true)
     val overlayOpacity: Float get() = prefs.getInt(KEY_OVERLAY_OPACITY, 55) / 100f
@@ -90,6 +91,7 @@ class AppSettings(context: Context) {
         const val KEY_SMOOTHING = "smoothing"
         const val KEY_AUTOSTART = "auto_start"
         const val KEY_FAST_DISC = "fast_disc"
+        const val KEY_FAST_TAPE = "fast_tape"
         const val KEY_SHOW_JOYSTICK = "show_joystick"
         const val KEY_OVERLAY_OPACITY = "overlay_opacity"
         const val KEY_OVERLAY_SCALE = "overlay_scale"

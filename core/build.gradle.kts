@@ -41,6 +41,7 @@ tasks.withType<Test>().configureEach {
     systemProperty("acpc.romDir", (project.findProperty("romDir") as String?) ?: "$home/.acpc/roms")
     systemProperty("acpc.z80TestDir", (project.findProperty("z80TestDir") as String?) ?: "$home/.acpc/z80tests")
     systemProperty("acpc.testDiskDir", (project.findProperty("testDiskDir") as String?) ?: "$home/.acpc/testdisks")
+    systemProperty("acpc.tapeDir", (project.findProperty("tapeDir") as String?) ?: "$home/.acpc/tapes")
     systemProperty("acpc.compatOut", (project.findProperty("compatOut") as String?) ?: "$home/.acpc/compat-out")
     testLogging {
         events("failed", "skipped")
