@@ -44,5 +44,6 @@ class RomSetupActivity : ToolbarActivity() {
         binding.status664.text = "${if (romStore.hasSystemRom(CpcModel.CPC664)) ok else missing}  cpc664.rom — ${CpcModel.CPC664.displayName}"
         binding.status6128.text = "${if (romStore.hasSystemRom(CpcModel.CPC6128)) ok else missing}  cpc6128.rom — ${CpcModel.CPC6128.displayName}"
         binding.statusAmsdos.text = "${if (romStore.hasAmsdos()) ok else missing}  amsdos.rom — AMSDOS (${getString(R.string.roms_required_for_disc)})"
+        binding.statusPlus.text = "${if (romStore.hasSystemCartridge()) ok else missing}  system.cpr — ${CpcModel.CPC6128PLUS.displayName} (${getString(R.string.roms_plus_cartridge)})"
     }
 }

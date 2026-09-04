@@ -26,12 +26,13 @@ data class GameEntry(
     var modelOverride: String? = null,
     var autoStart: Boolean? = null,
     var playCount: Int = 0,
-    /** "dsk" (disc image), "sna" (snapshot) or "cdt" (tape). */
+    /** "dsk" (disc image), "sna" (snapshot), "cdt" (tape) or "cpr" (Plus / GX4000 cartridge). */
     val kind: String = KIND_DSK,
 ) {
     val isSnapshot: Boolean get() = kind == KIND_SNA
     val isTape: Boolean get() = kind == KIND_CDT
     val isDisc: Boolean get() = kind == KIND_DSK
+    val isCartridge: Boolean get() = kind == KIND_CPR
 
     fun toJson(): JSONObject = JSONObject().apply {
         put("id", id); put("title", title); put("fileName", fileName); put("size", size); put("kind", kind)
@@ -55,6 +56,7 @@ data class GameEntry(
         const val KIND_DSK = "dsk"
         const val KIND_SNA = "sna"
         const val KIND_CDT = "cdt"
+        const val KIND_CPR = "cpr"
     }
 }
 
@@ -140,7 +142,7 @@ class GameLibrary(context: Context) {
         var bytes = rawBytes
         var name = originalName
         if (isZip(bytes)) {
-            val (member, memberBytes) = extractFromZip(bytes, listOf(".dsk", ".sna", ".cdt"))
+            val (member, memberBytes) = extractFromZip(bytes, listOf(".dsk", ".sna", ".cdt", ".cpr"))
                 ?: throw ImportException(app.getString(zipWithoutDskMessage(bytes)))
             bytes = memberBytes
             name = member
@@ -149,6 +151,7 @@ class GameLibrary(context: Context) {
             DskFormat.isDsk(bytes) -> GameEntry.KIND_DSK
             SnaFormat.isSna(bytes) -> GameEntry.KIND_SNA
             CdtFormat.isCdt(bytes) -> GameEntry.KIND_CDT
+            dev.stefan.acpc.core.cartridge.Cartridge.isCpr(bytes) -> GameEntry.KIND_CPR
             else -> throw ImportException(app.getString(dev.stefan.acpc.R.string.error_not_a_dsk))
         }
         // Validate the structure now so the emulator never sees a broken image.
@@ -160,9 +163,13 @@ class GameLibrary(context: Context) {
             runCatching { SnaFormat.info(bytes) }.getOrElse {
                 throw ImportException(app.getString(dev.stefan.acpc.R.string.error_invalid_sna, it.message ?: ""))
             }
-        } else {
+        } else if (kind == GameEntry.KIND_CDT) {
             runCatching { CdtFormat.parse(bytes) }.getOrElse {
                 throw ImportException(app.getString(dev.stefan.acpc.R.string.error_invalid_cdt, it.message ?: ""))
+            }
+        } else {
+            runCatching { dev.stefan.acpc.core.cartridge.Cartridge.parse(bytes, name) }.getOrElse {
+                throw ImportException(app.getString(dev.stefan.acpc.R.string.error_invalid_cpr, it.message ?: ""))
             }
         }
         val id = sha1(bytes).take(16)
@@ -218,7 +225,6 @@ class GameLibrary(context: Context) {
                 }
             }
             return when {
-                names.any { it.endsWith(".cpr") } -> dev.stefan.acpc.R.string.error_zip_cartridge
                 names.any { it.endsWith(".tzx") || it.endsWith(".wav") || it.endsWith(".csw") } -> dev.stefan.acpc.R.string.error_zip_tape
                 else -> dev.stefan.acpc.R.string.error_zip_without_dsk
             }

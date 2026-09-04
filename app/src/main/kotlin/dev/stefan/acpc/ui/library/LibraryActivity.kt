@@ -192,6 +192,17 @@ class LibraryActivity : AppCompatActivity() {
                             append(getString(R.string.details_played, entry.playCount))
                         }
                     }.getOrElse { getString(R.string.error_cannot_read_file) }
+                } else if (entry.isCartridge) {
+                    runCatching {
+                        val cart = dev.stefan.acpc.core.cartridge.Cartridge.parse(library.diskFile(entry).readBytes(), entry.title)
+                        buildString {
+                            append(getString(R.string.details_file, entry.fileName)).append('\n')
+                            append(getString(R.string.details_size, entry.size / 1024)).append('\n')
+                            append(getString(R.string.details_cartridge, cart.pageCount, cart.pageCount * 16, getString(if (cart.isSystemCartridge) R.string.cartridge_system else R.string.cartridge_game))).append('\n')
+                            entry.sourceUrl?.let { append(getString(R.string.details_source, it)).append('\n') }
+                            append(getString(R.string.details_played, entry.playCount))
+                        }
+                    }.getOrElse { getString(R.string.error_cannot_read_file) }
                 } else if (entry.isTape) {
                     runCatching {
                         val img = dev.stefan.acpc.core.tape.CdtFormat.parse(library.diskFile(entry).readBytes())

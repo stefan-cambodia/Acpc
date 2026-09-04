@@ -41,7 +41,7 @@ class GameAdapter(
     inner class Holder(private val b: ItemGameBinding) : RecyclerView.ViewHolder(b.root) {
         fun bind(entry: GameEntry) {
             b.title.text = entry.title
-            b.badge.text = when { entry.isSnapshot -> "SNA"; entry.isTape -> "CDT"; else -> "DSK" }
+            b.badge.text = when { entry.isSnapshot -> "SNA"; entry.isTape -> "CDT"; entry.isCartridge -> "CPR"; else -> "DSK" }
             val thumb = thumbFile(entry)
             if (thumb.exists()) {
                 b.thumb.setImageBitmap(android.graphics.BitmapFactory.decodeFile(thumb.path))

@@ -60,7 +60,7 @@ class VirtualKeyboardView @JvmOverloads constructor(context: Context, attrs: Att
         ),
         listOf(
             Key(CpcKey.CONTROL, "CTRL", 1.8f), Key(CpcKey.COPY, "COPY", 1.5f), Key(CpcKey.SPACE, "SPACE", 8f),
-            Key(CpcKey.JOY0_FIRE1, "FIRE", 1.5f), Key(CpcKey.F_DOT, ".", 1f),
+            Key(CpcKey.JOY0_FIRE2, "FIRE", 1.5f), Key(CpcKey.F_DOT, ".", 1f),
         ),
     )
 

@@ -31,8 +31,10 @@ class EmulatorSession(
     context: Context,
     val model: CpcModel,
     crtcType: CrtcType,
-    roms: RomSet,
+    roms: RomSet?,
     private val settings: AppSettings,
+    /** The cartridge of a Plus machine: the 6128 Plus system cartridge, or a GX4000 game. */
+    val cartridge: dev.stefan.acpc.core.cartridge.Cartridge? = null,
 ) {
     /** Receives completed frames on the emulation thread. */
     fun interface FrameListener {
@@ -40,8 +42,23 @@ class EmulatorSession(
     }
 
     private val audio = AndroidAudioSink(AndroidAudioSink.preferredSampleRate(), settings.audioLatencyFrames)
-    private val hasAmsdos = roms.amsdosRom != null
-    val emulator: CpcEmulator = CpcEmulator.createMachine(model, roms, audio, crtcType)
+    private val hasAmsdos = roms?.amsdosRom != null || (model.isPlus && cartridge?.isSystemCartridge == true)
+    val emulator: CpcEmulator = CpcEmulator.createMachine(model, roms, audio, crtcType, cartridge)
+
+    /**
+     * Frames the firmware needs after a reset before it accepts typed input.
+     * The 6128 Plus boots to an "f1 BASIC / f2 Burnin' Rubber" menu: f1 is
+     * pressed then, and typing starts 100 frames later.
+     */
+    private fun scheduleBoot(resetFirst: Boolean): Long {
+        val now = emulator.machine.frameCount
+        if (!resetFirst) return now + 5
+        if (model == CpcModel.CPC6128PLUS) {
+            pendingScript = listOf<Pair<Long, () -> Unit>>((now + 130) to { emulator.machine.keyTyper.typeKey(dev.stefan.acpc.core.keyboard.CpcKey.F1) })
+            return now + 230
+        }
+        return now + 130
+    }
 
     @Volatile var frameListener: FrameListener? = null
 
@@ -117,13 +134,15 @@ class EmulatorSession(
             emulator.releaseAllKeys()
         }
         emulator.loadDisk(0, bytes, name)
+        pendingScript = null
+        val ready = scheduleBoot(resetFirst)
         if (autoStart) {
             val image = DskFormat.read(bytes, name)
             val command = AmsdosCatalog.autoStartCommand(image)
             if (command != null) {
                 // Give the firmware time to boot (about 2.5 s) before typing.
                 pendingAutoStart = command
-                autoStartAtFrame = emulator.machine.frameCount + (if (resetFirst) 130 else 5)
+                autoStartAtFrame = ready
             }
         }
     }
@@ -161,13 +180,14 @@ class EmulatorSession(
             emulator.releaseAllKeys()
         }
         emulator.insertTape(bytes, name)
+        pendingScript = null
+        val ready = scheduleBoot(resetFirst)
         if (autoStart) {
-            val now = emulator.machine.frameCount
-            val boot = if (resetFirst) 130L else 5L
-            val script = ArrayList<Pair<Long, String>>()
-            if (hasAmsdos) script += (now + boot) to "|tape\n"         // AMSDOS redirects RUN" to the disc
-            script += (now + boot + 25) to "run\"\n"
-            script += (now + boot + 75) to " "
+            val script = ArrayList<Pair<Long, () -> Unit>>()
+            pendingScript?.let { script.addAll(it) }
+            if (hasAmsdos) script += ready to { emulator.typeText("|tape\n") }   // AMSDOS redirects RUN" to the disc
+            script += (ready + 25) to { emulator.typeText("run\"\n") }
+            script += (ready + 75) to { emulator.typeText(" ") }
             pendingScript = script
             pendingAutoStart = "RUN\""
             autoStartAtFrame = Long.MAX_VALUE
@@ -177,7 +197,7 @@ class EmulatorSession(
     /** True while the tape is turning and fast tape loading is on: the loop then runs unpaced. */
     val tapeTurbo: Boolean get() = settings.fastTape && emulator.machine.tape?.isMoving == true
 
-    @Volatile private var pendingScript: List<Pair<Long, String>>? = null
+    @Volatile private var pendingScript: List<Pair<Long, () -> Unit>>? = null
     @Volatile private var pendingAutoStart: String? = null
     @Volatile private var autoStartAtFrame = 0L
 
@@ -210,10 +230,10 @@ class EmulatorSession(
                     val f = emulator.machine.frameCount
                     val due = script.filter { it.first <= f }
                     if (due.isNotEmpty()) {
-                        due.forEach { emulator.typeText(it.second) }
+                        due.forEach { it.second() }
                         val rest = script - due.toSet()
                         pendingScript = rest.ifEmpty { null }
-                        if (rest.isEmpty()) pendingAutoStart = null
+                        if (rest.isEmpty() && autoStartAtFrame == Long.MAX_VALUE) pendingAutoStart = null
                     }
                 }
                 emulator.runFrame()

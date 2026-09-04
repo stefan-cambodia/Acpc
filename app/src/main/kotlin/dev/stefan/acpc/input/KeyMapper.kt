@@ -184,9 +184,10 @@ class GamepadMapper(overrides: String? = null) {
 
     companion object {
         val DEFAULT: Map<Int, Target> = mapOf(
-            KeyEvent.KEYCODE_BUTTON_A to Target.Joy(JoystickButton.FIRE1),
-            KeyEvent.KEYCODE_BUTTON_B to Target.Joy(JoystickButton.FIRE2),
-            KeyEvent.KEYCODE_BUTTON_X to Target.Joy(JoystickButton.FIRE1),
+            // A = pad button 1 = the CPC's "fire 2" (line 9 bit 4), the main fire of most games.
+            KeyEvent.KEYCODE_BUTTON_A to Target.Joy(JoystickButton.FIRE2),
+            KeyEvent.KEYCODE_BUTTON_B to Target.Joy(JoystickButton.FIRE1),
+            KeyEvent.KEYCODE_BUTTON_X to Target.Joy(JoystickButton.FIRE2),
             KeyEvent.KEYCODE_BUTTON_Y to Target.Key(CpcKey.SPACE),
             KeyEvent.KEYCODE_DPAD_UP to Target.Joy(JoystickButton.UP),
             KeyEvent.KEYCODE_DPAD_DOWN to Target.Joy(JoystickButton.DOWN),

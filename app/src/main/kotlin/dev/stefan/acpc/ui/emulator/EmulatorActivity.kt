@@ -192,7 +192,9 @@ class EmulatorActivity : AppCompatActivity() {
             }
 
             override fun onFire(button: Int, pressed: Boolean) {
-                session?.emulator?.setJoystick(0, if (button == 1) JoystickButton.FIRE1 else JoystickButton.FIRE2, pressed)
+                // Pad button 1 is the CPC's "fire 2" (matrix line 9 bit 4), the button
+                // of the standard joystick and of the GX4000 pad that games test first.
+                session?.emulator?.setJoystick(0, if (button == 1) JoystickButton.FIRE2 else JoystickButton.FIRE1, pressed)
             }
 
             override fun onExtraKey(key: CpcKey, pressed: Boolean) = queueKey(key, pressed)
@@ -541,6 +543,8 @@ class EmulatorActivity : AppCompatActivity() {
                 val bytes = library.diskFile(entry).readBytes()
                 if (entry.isSnapshot) {
                     s.loadSnapshot(bytes)                       // back to the snapshot's starting point
+                } else if (entry.isCartridge) {
+                    Unit                                        // the cartridge boots with the machine
                 } else if (entry.isTape) {
                     s.insertTape(bytes, entry.title, entry.autoStart ?: settings.autoStart, resetFirst = true)
                 } else {

@@ -12,9 +12,16 @@ object EmulatorHolder {
         private set
 
     @Synchronized
-    fun start(context: Context, model: CpcModel, crtcType: CrtcType, roms: RomSet, settings: AppSettings): EmulatorSession {
+    fun start(
+        context: Context,
+        model: CpcModel,
+        crtcType: CrtcType,
+        roms: RomSet?,
+        settings: AppSettings,
+        cartridge: dev.stefan.acpc.core.cartridge.Cartridge? = null,
+    ): EmulatorSession {
         session?.stop()
-        val s = EmulatorSession(context.applicationContext, model, crtcType, roms, settings)
+        val s = EmulatorSession(context.applicationContext, model, crtcType, roms, settings, cartridge)
         session = s
         return s
     }

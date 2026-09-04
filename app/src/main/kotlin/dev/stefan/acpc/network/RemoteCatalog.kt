@@ -35,7 +35,7 @@ object RemoteCatalog {
     /** True for names the emulator can import directly. */
     fun isDiskFile(name: String): Boolean {
         val n = name.lowercase()
-        return n.endsWith(".dsk") || n.endsWith(".zip") || n.endsWith(".sna") || n.endsWith(".cdt")
+        return n.endsWith(".dsk") || n.endsWith(".zip") || n.endsWith(".sna") || n.endsWith(".cdt") || n.endsWith(".cpr")
     }
 
     /** True when the URL points at a file rather than a directory to browse. */

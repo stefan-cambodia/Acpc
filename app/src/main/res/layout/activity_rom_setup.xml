@@ -19,6 +19,7 @@
         <TextView android:id="@+id/status_664" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:fontFamily="monospace" android:textColor="@color/cpc_yellow" />
         <TextView android:id="@+id/status_6128" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:fontFamily="monospace" android:textColor="@color/cpc_yellow" />
         <TextView android:id="@+id/status_amsdos" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:fontFamily="monospace" android:textColor="@color/cpc_yellow" />
+        <TextView android:id="@+id/status_plus" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:fontFamily="monospace" android:textColor="@color/cpc_yellow" />
 
         <Button
             android:id="@+id/button_import"

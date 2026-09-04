@@ -44,7 +44,7 @@ Run with:
 | Boulder Dash (bdash) | "Loading..." | long load |
 | Columns CPC | menu | |
 | Cyber Power | title, "press space" | |
-| Jet Set Willy+ (jswplus) | crashes after loading | CPC Plus program: writes the ASIC registers (&6800-&6805) and uses RMR2 (gate array values with bit 5 set); the Plus is not emulated |
+| Jet Set Willy+ (jswplus) | crashes after loading on a 6128 | CPC Plus program (ASIC registers, RMR2): boot it on the 6128 Plus model, where it runs (see Cartridges below) |
 | Robotron 2084 | title screen | |
 | Sean McManus collection 2024 | menu | |
 | Space: Above and Beyond | title | |
@@ -111,3 +111,47 @@ which is the black screen. The image's own XOR over every block is zero,
 so the bytes are right and only the timing is wrong; a real machine would
 fail on such a signal too. Nothing to fix in the emulator: Z80 timings
 (`Z80CpcTimingTest`) and the edge stream are correct.
+
+## Cartridges (CPC Plus, GX4000)
+
+`CartridgeIntegrationTest` (slow) boots every `.cpr` in `~/.acpc/carts` (Gradle
+property `cartDir`): a game cartridge on a GX4000, a system cartridge on a
+6128 Plus. It presses the pad's button 1 (the CPC's fire 2, matrix line 9
+bit 4) every 6 s, runs `cartSeconds` (default 40) and saves screenshots and
+a report (ASIC unlocked, sprites, DMA, interrupt state) to `compatOut/carts`.
+Run with:
+
+```
+./gradlew :core:test -PslowTests --tests '*CartridgeIntegrationTest*' \
+    -PcartDir=/path/to/carts -PcompatOut=/path/to/output -PcartSeconds=40
+```
+
+Results with the cartridges from the archive.org GX4000 collections:
+
+| Cartridge | State at 40 s | ASIC use |
+|-----------|---------------|----------|
+| Pang | in the game (Mt Fuji stage) | sprites, PRI, split, IM 2 vectors |
+| Robocop 2 | in the game | sprites, PRI, RMR2 paging |
+| Navy Seals | in the game | sprites, PRI, DMA music, 4096-colour title and score table |
+| Batman the Movie | in the game | 12-bit palette |
+| Klax | in the game | 12-bit palette |
+| Plotting | in the game (two-player screen) | sprites, PRI |
+| Burnin' Rubber (GX4000 cartridge) | in the game (race start) | sprites, DMA music, RMR2 paging |
+| Switchblade | animated title, then sprites | sprites, PRI |
+| Relentless, zblast SD (homebrew) | menus | none: plain CPC programs on a cartridge |
+| System cartridge (Caprice32 `system.cpr`) | "f1 Amstrad BASIC / f2 Burnin' Rubber" menu, BASIC 1.1 after f1 | 6128 Plus firmware |
+| Parados 1.2+ (French firmware replacement) | BASIC prompt | 6128 Plus firmware; its French keyboard layout makes the auto-typed commands come out wrong (`RUN2DISC:BQS`) |
+
+With the system cartridge, `CompatibilityRunTest` boots a 6128 Plus for a
+disc when a `<name>.plus` file names the cartridge (default `system.cpr` in
+`cartDir`); it presses f1 at the boot menu before typing the command. Jet
+Set Willy+ then loads and reaches its first room, "The Bathroom".
+
+Two details found while bringing these up:
+
+- The keyboard must stay readable when AY register 7 sets port A as an
+  output (Pang leaves the mixer at &FF and polls the joystick line); the AY
+  now returns the input pins for register 14 in both directions, as MAME does.
+- The pad's button 1 is the CPC's "fire 2" (matrix line 9 bit 4), the button
+  the standard joystick and most games use; the on-screen overlay's main
+  button and the gamepad's A button send that bit.

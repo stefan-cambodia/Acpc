@@ -4,11 +4,15 @@
         <item>Amstrad CPC 464</item>
         <item>Amstrad CPC 664</item>
         <item>Amstrad CPC 6128</item>
+        <item>Amstrad CPC 6128 Plus</item>
+        <item>Amstrad GX4000</item>
     </string-array>
     <string-array name="cpc_model_values">
         <item>CPC464</item>
         <item>CPC664</item>
         <item>CPC6128</item>
+        <item>CPC6128PLUS</item>
+        <item>GX4000</item>
     </string-array>
     <string-array name="crtc_entries">
         <item>Type 0 — Hitachi HD6845S</item>

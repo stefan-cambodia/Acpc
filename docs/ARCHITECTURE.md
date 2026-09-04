@@ -36,17 +36,25 @@ so register writes land on the exact microsecond the real hardware would see
 them. The AY and the FDC are caught up lazily on access and at frame end.
 Constants are in `core/timing/CpcTiming`.
 
-`CpcModel` (464 / 664 / 6128) carries the RAM size, the ROM set, the
-manufacturer id read through the PPI and the default CRTC. `CrtcType` selects
-the register masks and read-back rules of the emulated CRTC variant.
+`CpcModel` (464 / 664 / 6128 / 6128 Plus / GX4000) carries the RAM size, the
+firmware file, the manufacturer id read through the PPI and whether the
+machine is a Plus. `CrtcType` selects the register masks and read-back rules
+of the emulated CRTC variant.
+
+Plus machines take a `Cartridge` instead of a `RomSet`: the system cartridge
+of the 6128 Plus or a GX4000 game. The `Asic` object holds the Plus-only
+state; the Gate Array, the memory and the machine consult it when present, so
+a classic CPC pays nothing for it.
 
 ### Chips
 
 | Package      | Class           | Notes |
 |--------------|-----------------|-------|
 | `cpu/z80`    | `Z80`           | Full instruction set including undocumented opcodes and flags (X/Y, MEMPTR), IM 0/1/2, R register, HALT, with CPC wait-state timing. Talks to the machine through the `Z80Bus` interface. Validated with per-instruction tests and the zexdoc/zexall exercisers. |
-| `memory`     | `CpcMemory`     | 64 KB base RAM plus 64 KB expansion on the 6128, lower ROM, upper ROMs (BASIC 0, AMSDOS 7), Gate Array RMR ROM enables, the eight 6128 RAM configurations and bank selection. |
-| `gatearray`  | `GateArray`     | Pen and border colours (`CpcPalette`), modes 0/1/2 latched at HSYNC, pixel generation from CRTC addresses, 300 Hz interrupt generator (52-line counter, VSYNC reset, bit 5 clear on acknowledge), monitor model that turns sync signals into a stable raster. |
+| `memory`     | `CpcMemory`     | 64 KB base RAM plus 64 KB expansion on the 6128, lower ROM, upper ROMs (BASIC 0, AMSDOS 7), Gate Array RMR ROM enables, the eight 6128 RAM configurations and bank selection. On a Plus the ROMs are cartridge pages (RMR2 chooses the lower one and where it sits; ROM 7 = page 3, ROMs 128-159 = pages 0-31, others = page 1) and the ASIC I/O page replaces block 1 when mapped. |
+| `gatearray`  | `GateArray`     | Pen and border colours (`CpcPalette`), modes 0/1/2 latched at HSYNC, pixel generation from CRTC addresses, 300 Hz interrupt generator (52-line counter, VSYNC reset, bit 5 clear on acknowledge), monitor model that turns sync signals into a stable raster. With an ASIC: 12-bit palette, soft scroll (horizontal delay, vertical raster offset, border extension), split screen (`Crtc.splitAt`), programmable raster interrupt replacing the 52-line one, DMA step at every HSYNC end, hardware sprites drawn over each display line, ASIC vector on interrupt acknowledge. |
+| `asic`       | `Asic`          | Plus ASIC: 17-byte unlock sequence on the CRTC select port, RMR2 (cartridge page and position of the lower ROM, I/O page at &4000), the I/O page (sprite pixels and attributes, 32-entry palette, PRI, SPLT, SSCR, IVR, analogue inputs, three DMA channels and DCSR), DMA instruction set (LOAD, PAUSE with prescaler, REPEAT/LOOP, INT, STOP), interrupt priorities and vectors (raster 6, DMA 0/1/2 = 4/2/0). |
+| `cartridge`  | `Cartridge`     | `.cpr` RIFF container (`AMS!`, `cbNN` chunks) or raw dump: up to 32 pages of 16 KB, page numbers wrapping on the cartridge size, system cartridge detection. |
 | `crtc`       | `Crtc`          | 6845 counters, display enable, HSYNC / VSYNC generation with programmable widths, vertical total adjust, MA/RA generation, type-dependent behaviour. |
 | `ppi`        | `Ppi8255`       | Ports A (AY data), B (VSYNC, manufacturer id, 50 Hz, cassette in), C (keyboard line, AY control, cassette motor), modes and bit set/reset. |
 | `ay`         | `Ay38912`       | Three tone channels, noise, envelope, logarithmic DAC, 125 kHz stepping box-filtered to the output rate, stereo A-left / C-right, port A wired to the keyboard matrix. |
@@ -96,4 +104,5 @@ long ones only run with `-PslowTests`.
 
 Add a `CpcModel` entry (RAM size, ROM set, manufacturer id), teach `RomStore`
 the ROM hashes, and if the video chip differs add a `CrtcType`. Nothing else
-is model-specific.
+is model-specific; the Plus models show how a whole extra chip plugs in
+through one optional object.

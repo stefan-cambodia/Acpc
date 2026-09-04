@@ -83,7 +83,11 @@
     <string name="details_snapshot">Instantané SNA v%1$d, %2$d Ko de RAM, machine : %3$s</string>
     <string name="error_invalid_dsk">Cette image DSK est corrompue ou incomplète.</string>
     <string name="error_zip_without_dsk">Cette archive ZIP ne contient pas de fichier .dsk.</string>
-    <string name="error_zip_cartridge">Cette archive contient une cartouche .cpr (CPC Plus / GX4000) : les cartouches ne sont pas prises en charge.</string>
+    <string name="error_invalid_cpr">Cartouche CPR illisible : %1$s</string>
+    <string name="details_cartridge">Cartouche CPC Plus / GX4000, %1$d pages (%2$d Ko), %3$s</string>
+    <string name="cartridge_system">cartouche système (firmware du 6128 Plus)</string>
+    <string name="cartridge_game">jeu</string>
+    <string name="roms_plus_cartridge">cartouche système, pour les disquettes et cassettes sur 6128 Plus ; les jeux GX4000 n\'en ont pas besoin</string>
     <string name="error_zip_tape">Cette archive contient un enregistrement de cassette (.tzx/.wav/.csw) non pris en charge : utilisez un fichier .cdt.</string>
     <string name="error_start_emulator">Impossible de démarrer l\'émulateur : %1$s</string>
     <string name="error_state">Sauvegarde d\'état illisible : %1$s</string>
@@ -91,7 +95,7 @@
     <!-- ROMs -->
     <string name="roms_missing_toast">ROM manquante pour le %1$s : importez vos fichiers ROM.</string>
     <string name="roms_missing_banner">ROMs Amstrad absentes : appuyez sur « ROMs » pour les importer.</string>
-    <string name="roms_explanation">L\'émulateur a besoin des ROMs d\'origine de l\'Amstrad, qui ne sont pas fournies avec l\'application. Importez-les depuis votre stockage : elles sont reconnues automatiquement par leur contenu.\n\nFichiers attendus (32 Ko : OS + BASIC ; 16 Ko : AMSDOS) :</string>
+    <string name="roms_explanation">L\'émulateur a besoin des ROMs d\'origine de l\'Amstrad, qui ne sont pas fournies avec l\'application. Importez-les depuis votre stockage : elles sont reconnues automatiquement par leur contenu.\n\nFichiers attendus (32 Ko : OS + BASIC ; 16 Ko : AMSDOS ; cartouche système .cpr du 6128 Plus) :</string>
     <string name="roms_required_for_disc">indispensable pour les disquettes</string>
     <string name="roms_import">Importer des fichiers ROM…</string>
     <string name="roms_done">Terminer</string>
@@ -157,7 +161,7 @@
     <string name="pref_fast_disc_title">Lecteur de disquette rapide</string>
     <string name="pref_fast_disc_summary">Supprime les délais de rotation et de déplacement de tête (chargements plus rapides, moins fidèle).</string>
     <string name="pref_roms_title">ROMs Amstrad</string>
-    <string name="pref_roms_summary">Importer cpc464.rom, cpc664.rom, cpc6128.rom, amsdos.rom</string>
+    <string name="pref_roms_summary">Importer cpc464.rom, cpc664.rom, cpc6128.rom, amsdos.rom, system.cpr (6128 Plus)</string>
     <string name="pref_category_display">Affichage</string>
     <string name="pref_scaling_title">Mise à l\'échelle</string>
     <string name="scaling_fit">Ajuster à l\'écran</string>
