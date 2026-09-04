@@ -19,11 +19,12 @@ import dev.stefan.acpc.core.state.StateWriter
 class CpcEmulator(
     override val model: CpcModel,
     override val crtcType: CrtcType,
-    roms: RomSet,
+    roms: RomSet?,
     audioSink: AudioSink,
+    cartridge: dev.stefan.acpc.core.cartridge.Cartridge? = null,
 ) : Emulator {
 
-    val machine = CpcMachine(model, crtcType, roms, audioSink)
+    val machine = CpcMachine(model, crtcType, roms, audioSink, cartridge)
 
     private val lock = Any()
 
@@ -107,6 +108,10 @@ class CpcEmulator(
         w.ints("KEYS", machine.keyboard.snapshot())
         machine.fdc.exportState(w)
         machine.tape?.let { w.longs("TAPE", longArrayOf(it.position)) }
+        machine.asic?.let { asic ->
+            w.ints("ASIC", asic.exportState())
+            w.bytes("ASIR", asic.ram)
+        }
         w.toByteArray()
     }
 
@@ -134,6 +139,9 @@ class CpcEmulator(
             machine.ppi.importState(r.ints("PPI "))
             machine.keyboard.restore(r.ints("KEYS"))
             machine.fdc.importState(r)
+            machine.asic?.let { asic ->
+                if (r.has("ASIC")) asic.importState(r.ints("ASIC"), r.bytes("ASIR")) else asic.reset()
+            }
             machine.restoreClocks(clocks[0], clocks[1])
             if (r.has("TAPE")) machine.tape?.let { t -> t.lastCyclesHint = machine.cpu.cycles; t.seek(r.longs("TAPE")[0]) }
         } catch (e: InvalidStateException) {
@@ -166,7 +174,8 @@ class CpcEmulator(
             ix = cpu.ix, iy = cpu.iy, iff1 = cpu.iff1, im = cpu.im,
             totalCycles = cpu.cycles, frame = machine.frameCount,
             gaMode = machine.gateArray.mode,
-            romConfig = "L${if (mem.lowerRomEnabled) 1 else 0} U${if (mem.upperRomEnabled) 1 else 0} #${mem.upperRomNumber}",
+            romConfig = "L${if (mem.lowerRomEnabled) 1 else 0} U${if (mem.upperRomEnabled) 1 else 0} #${mem.upperRomNumber}" +
+                (machine.asic?.let { " ASIC ${if (it.locked) "locked" else "unlocked RMR2=%02X".format(it.rmr2)}" } ?: ""),
             ramConfig = mem.ramConfig,
             crtcRegisters = machine.crtc.regs.copyOf(),
             fdcStatus = machine.fdc.describe(),
@@ -182,9 +191,10 @@ class CpcEmulator(
         /** Factory matching the `createMachine(model)` entry point of the core API. */
         fun createMachine(
             model: CpcModel,
-            roms: RomSet,
+            roms: RomSet?,
             audioSink: AudioSink = NullAudioSink(),
             crtcType: CrtcType = CrtcType.TYPE0_HD6845S,
-        ): CpcEmulator = CpcEmulator(model, crtcType, roms, audioSink)
+            cartridge: dev.stefan.acpc.core.cartridge.Cartridge? = null,
+        ): CpcEmulator = CpcEmulator(model, crtcType, roms, audioSink, cartridge)
     }
 }

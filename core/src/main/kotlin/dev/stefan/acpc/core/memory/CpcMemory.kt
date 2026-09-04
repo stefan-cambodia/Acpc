@@ -1,6 +1,8 @@
 package dev.stefan.acpc.core.memory
 
 import dev.stefan.acpc.core.api.RomSet
+import dev.stefan.acpc.core.asic.Asic
+import dev.stefan.acpc.core.cartridge.Cartridge
 import dev.stefan.acpc.core.machine.CpcModel
 
 /**
@@ -27,13 +29,27 @@ import dev.stefan.acpc.core.machine.CpcModel
  *    6       0      6      2      3
  *    7       0      7      2      3
  * ```
+ *
+ * On the Plus range the ROMs come from a [Cartridge]: page 0 (or the page
+ * chosen by RMR2, at the position it selects) is the lower ROM, the upper
+ * ROM select register picks a cartridge page (ROM 7 = page 3, ROMs 128-159 =
+ * pages 0-31, anything else = page 1, BASIC), and the [Asic] I/O page
+ * replaces block 1 when RMR2 asks for it.
  */
-class CpcMemory(val model: CpcModel, roms: RomSet, ramSize: Int = model.ramSize) {
+class CpcMemory(
+    val model: CpcModel,
+    roms: RomSet?,
+    val cartridge: Cartridge? = null,
+    private val asic: Asic? = null,
+    ramSize: Int = model.ramSize,
+) {
 
     /** Physical RAM. 64 KB (464/664) or 128 KB (6128); larger sizes model a memory expansion. */
     val ram: ByteArray = ByteArray(ramSize)
 
-    val lowerRom: ByteArray = roms.lowerRom
+    /** The firmware ROM (page 0 of the cartridge on a Plus). */
+    val lowerRom: ByteArray = roms?.lowerRom ?: cartridge?.page(0)
+        ?: throw IllegalArgumentException("A ROM set or a cartridge is required")
     private val upperRoms: Array<ByteArray?> = arrayOfNulls(256)
 
     /** ROM select register (port &DFxx). */
@@ -52,17 +68,23 @@ class CpcMemory(val model: CpcModel, roms: RomSet, ramSize: Int = model.ramSize)
     var ramConfig: Int = 0
         private set
 
+    /** True while the ASIC I/O page is mapped at &4000-&7FFF. */
+    var asicPageMapped: Boolean = false
+        private set
+
     // Mapping tables: one entry per 16 KB block.
     private val readSource = arrayOfNulls<ByteArray>(4)
     private val readOffset = IntArray(4)
     private val writeOffset = IntArray(4)
 
     init {
-        upperRoms[0] = roms.basicRom
-        roms.amsdosRom?.let { upperRoms[7] = it }
-        for ((slot, rom) in roms.extraUpperRoms) {
-            require(rom.size == RomSet.ROM_SIZE) { "Upper ROM $slot must be 16 KB" }
-            upperRoms[slot and 0xFF] = rom
+        if (roms != null) {
+            upperRoms[0] = roms.basicRom
+            roms.amsdosRom?.let { upperRoms[7] = it }
+            for ((slot, rom) in roms.extraUpperRoms) {
+                require(rom.size == RomSet.ROM_SIZE) { "Upper ROM $slot must be 16 KB" }
+                upperRoms[slot and 0xFF] = rom
+            }
         }
         reset()
     }
@@ -105,7 +127,11 @@ class CpcMemory(val model: CpcModel, roms: RomSet, ramSize: Int = model.ramSize)
         remap()
     }
 
-    fun hasUpperRom(number: Int): Boolean = upperRoms[number and 0xFF] != null
+    fun hasUpperRom(number: Int): Boolean =
+        if (cartridge != null) true else upperRoms[number and 0xFF] != null
+
+    /** Recomputes the mapping after an ASIC change (lock state, RMR2). */
+    fun remapPlus() = remap()
 
     private fun remap() {
         val config = ramConfig and 7
@@ -128,16 +154,38 @@ class CpcMemory(val model: CpcModel, roms: RomSet, ramSize: Int = model.ramSize)
             readSource[block] = ram
             readOffset[block] = offset
         }
-        if (lowerRomEnabled) {
-            readSource[0] = lowerRom
-            readOffset[0] = 0
-        }
-        if (upperRomEnabled) {
-            // ROM numbers with no physical ROM fall back to BASIC (ROM 0),
-            // which is what the Gate Array / ROM board does on a real CPC.
-            val rom = upperRoms[upperRomNumber] ?: upperRoms[0]
-            readSource[3] = rom
-            readOffset[3] = 0
+        val cart = cartridge
+        if (cart == null) {
+            asicPageMapped = false
+            if (lowerRomEnabled) {
+                readSource[0] = lowerRom
+                readOffset[0] = 0
+            }
+            if (upperRomEnabled) {
+                // ROM numbers with no physical ROM fall back to BASIC (ROM 0),
+                // which is what the Gate Array / ROM board does on a real CPC.
+                val rom = upperRoms[upperRomNumber] ?: upperRoms[0]
+                readSource[3] = rom
+                readOffset[3] = 0
+            }
+        } else {
+            val asic = this.asic
+            val unlocked = asic != null && !asic.locked
+            val rmr2 = if (unlocked) asic!!.rmr2 else 0
+            asicPageMapped = unlocked && (rmr2 and 0x18) == 0x18
+            if (lowerRomEnabled) {
+                val block = when (rmr2 and 0x18) {
+                    0x08 -> 1
+                    0x10 -> 2
+                    else -> 0
+                }
+                readSource[block] = cart.page(rmr2 and 7)
+                readOffset[block] = 0
+            }
+            if (upperRomEnabled) {
+                readSource[3] = cart.page(cartridgePageForRom(upperRomNumber))
+                readOffset[3] = 0
+            }
         }
     }
 
@@ -145,11 +193,16 @@ class CpcMemory(val model: CpcModel, roms: RomSet, ramSize: Int = model.ramSize)
 
     fun read(address: Int): Int {
         val block = (address ushr 14) and 3
+        if (block == 1 && asicPageMapped) return asic!!.read(address and 0x3FFF)
         return readSource[block]!![readOffset[block] + (address and 0x3FFF)].toInt() and 0xFF
     }
 
     fun write(address: Int, value: Int) {
         val block = (address ushr 14) and 3
+        if (block == 1 && asicPageMapped) {
+            asic!!.write(address and 0x3FFF, value)
+            return
+        }
         ram[writeOffset[block] + (address and 0x3FFF)] = value.toByte()
     }
 
@@ -172,5 +225,14 @@ class CpcMemory(val model: CpcModel, roms: RomSet, ramSize: Int = model.ramSize)
         this.upperRomEnabled = upperEnabled
         this.ramConfig = ramConfig and 0x3F
         remap()
+    }
+
+    companion object {
+        /** Cartridge page selected by an upper ROM number on the Plus. */
+        fun cartridgePageForRom(romNumber: Int): Int = when {
+            romNumber == 7 -> 3
+            romNumber >= 128 -> romNumber and 31
+            else -> 1
+        }
     }
 }

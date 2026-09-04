@@ -43,7 +43,10 @@ class RomSet(
         }
 
         /** Names of the ROM files the user must provide for a model. */
-        fun requiredFiles(model: CpcModel): List<String> =
-            listOf(model.systemRomFile, "amsdos.rom")
+        fun requiredFiles(model: CpcModel): List<String> = when {
+            model == CpcModel.GX4000 -> emptyList()
+            model.isPlus -> listOf(model.systemRomFile)
+            else -> listOf(model.systemRomFile, "amsdos.rom")
+        }
     }
 }

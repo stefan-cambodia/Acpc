@@ -32,7 +32,6 @@ class CompatibilityRunTest {
 
     @Test
     fun runAllDiscs() {
-        assumeTrue(TestRoms.realAvailable(CpcModel.CPC6128), "ROMs not available")
         val disks = diskDir.listFiles { f -> f.name.lowercase().endsWith(".dsk") }?.sortedBy { it.name } ?: emptyList()
         assumeTrue(disks.isNotEmpty(), "no test discs in $diskDir")
         val report = StringBuilder()
@@ -46,8 +45,21 @@ class CompatibilityRunTest {
 
     private fun runDisc(disk: File): String {
         val name = disk.nameWithoutExtension
-        val model = if (File(diskDir, "$name.464").exists()) CpcModel.CPC464 else CpcModel.CPC6128
-        val emu = CpcEmulator.createMachine(model, TestRoms.real(model), NullAudioSink())
+        // `<name>.plus` boots a 6128 Plus with the system cartridge named inside it (default cartDir/system.cpr).
+        val plusFile = File(diskDir, "$name.plus")
+        val model = when {
+            plusFile.exists() -> CpcModel.CPC6128PLUS
+            File(diskDir, "$name.464").exists() -> CpcModel.CPC464
+            else -> CpcModel.CPC6128
+        }
+        val emu = if (model.isPlus) {
+            val cartDir = File(System.getProperty("acpc.cartDir") ?: (System.getProperty("user.home") + "/.acpc/carts"))
+            val cartName = plusFile.readText().trim().ifEmpty { "system.cpr" }
+            val cartFile = File(cartName).takeIf { it.isAbsolute } ?: File(cartDir, cartName)
+            CpcEmulator.createMachine(model, null, NullAudioSink(), cartridge = dev.stefan.acpc.core.cartridge.Cartridge.parse(cartFile.readBytes(), cartFile.name))
+        } else {
+            CpcEmulator.createMachine(model, TestRoms.real(model), NullAudioSink())
+        }
         val bytes = disk.readBytes()
         val image = try {
             DskFormat.read(bytes, disk.name)
@@ -57,6 +69,11 @@ class CompatibilityRunTest {
         emu.loadDisk(0, bytes, disk.name)
         val command = File(diskDir, "$name.cmd").takeIf { it.exists() }?.readText() ?: AmsdosCatalog.autoStartCommand(image)
         repeat(130) { emu.runFrame() }
+        if (model.isPlus) {
+            // The 6128 Plus firmware boots to an "f1 BASIC / f2 Burnin' Rubber" menu.
+            emu.machine.keyTyper.typeKey(dev.stefan.acpc.core.keyboard.CpcKey.F1)
+            repeat(100) { emu.runFrame() }
+        }
         if (command != null) emu.typeText(command)
         val extra = File(diskDir, "$name.keys").takeIf { it.exists() }?.readText()
         val seconds = (File(diskDir, "$name.secs").takeIf { it.exists() }?.readText()?.trim()?.toIntOrNull()) ?: 40

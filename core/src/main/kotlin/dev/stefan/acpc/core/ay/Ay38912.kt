@@ -98,7 +98,9 @@ class Ay38912(val sampleRate: Int = 44_100) {
     fun readRegister(): Int {
         val r = selectedRegister
         return when (r) {
-            14 -> if (regs[7] and 0x40 == 0) portAInput() and 0xFF else regs[14] and portAInput()
+            // The keyboard is readable even when register 7 sets port A as an
+            // output (Pang leaves the mixer at &FF): the pins follow the inputs.
+            14 -> portAInput() and 0xFF
             15 -> if (regs[7] and 0x80 == 0) 0xFF else regs[15]
             else -> regs[r]
         }

@@ -117,7 +117,10 @@ object SnaFormat {
         h[0x5A] = machine.psg.selectedRegister.toByte()
         for (r in 0 until 16) h[0x5B + r] = machine.psg.regs[r].toByte()
         put16(h, 0x6B, ramKb)
-        h[0x6D] = when (machine.model) { CpcModel.CPC464 -> 0; CpcModel.CPC664 -> 1; CpcModel.CPC6128 -> 2 }.toByte()
+        h[0x6D] = when (machine.model) {
+            CpcModel.CPC464 -> 0; CpcModel.CPC664 -> 1; CpcModel.CPC6128 -> 2
+            CpcModel.CPC6128PLUS -> 4; CpcModel.GX4000 -> 6
+        }.toByte()
         return h + machine.memory.ram.copyOf()
     }
 

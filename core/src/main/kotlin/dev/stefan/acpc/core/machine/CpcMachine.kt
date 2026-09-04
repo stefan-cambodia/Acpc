@@ -3,7 +3,9 @@ package dev.stefan.acpc.core.machine
 import dev.stefan.acpc.core.api.AudioSink
 import dev.stefan.acpc.core.api.RomSet
 import dev.stefan.acpc.core.api.VideoFrame
+import dev.stefan.acpc.core.asic.Asic
 import dev.stefan.acpc.core.ay.Ay38912
+import dev.stefan.acpc.core.cartridge.Cartridge
 import dev.stefan.acpc.core.cpu.z80.Z80
 import dev.stefan.acpc.core.cpu.z80.Z80Bus
 import dev.stefan.acpc.core.crtc.Crtc
@@ -36,15 +38,27 @@ import dev.stefan.acpc.core.timing.CpcTiming
 class CpcMachine(
     val model: CpcModel,
     val crtcType: CrtcType,
-    roms: RomSet,
+    roms: RomSet?,
     var audioSink: AudioSink,
+    /** The cartridge of a Plus machine (its firmware or a game); null on classic models. */
+    val cartridge: Cartridge? = null,
 ) : Z80Bus {
 
-    val memory = CpcMemory(model, roms)
+    init {
+        require(if (model.isPlus) cartridge != null else roms != null) {
+            if (model.isPlus) "${model.displayName} needs a cartridge" else "${model.displayName} needs a ROM set"
+        }
+    }
+
+    val psg = Ay38912(audioSink.sampleRate)
+
+    /** The Plus ASIC; null on classic models. */
+    val asic: Asic? = if (model.isPlus) Asic { reg, value -> syncAudio(); psg.selectRegister(reg); psg.writeRegister(value) } else null
+
+    val memory = CpcMemory(model, roms, if (model.isPlus) cartridge else null, asic)
     val cpu = Z80(this)
     val crtc = Crtc(crtcType)
-    val gateArray = GateArray(memory, crtc) { asserted -> cpu.intLine = asserted }
-    val psg = Ay38912(audioSink.sampleRate)
+    val gateArray = GateArray(memory, crtc, asic) { asserted -> cpu.intLine = asserted }
     val keyboard = KeyboardMatrix()
     val joystick0 = JoystickState(keyboard, 0)
     val joystick1 = JoystickState(keyboard, 1)
@@ -97,11 +111,13 @@ class CpcMachine(
 
     init {
         psg.portAInput = { keyboard.readLine(keyboardLine) }
+        asic?.onMappingChanged = { memory.remapPlus() }
         reset()
     }
 
     /** Hard reset: everything returns to its power-on state; RAM is cleared. */
     fun reset() {
+        asic?.reset()
         memory.reset()
         memory.fillPowerOnPattern()
         cpu.reset()
@@ -177,10 +193,7 @@ class CpcMachine(
 
     override fun writeMem(address: Int, value: Int) = memory.write(address, value)
 
-    override fun interruptAcknowledge(): Int {
-        gateArray.acknowledgeInterrupt()
-        return 0xFF
-    }
+    override fun interruptAcknowledge(): Int = gateArray.acknowledgeInterrupt()
 
     /**
      * I/O decoding. The CPC decodes ports with single address bits, so one
@@ -222,7 +235,7 @@ class CpcMachine(
         }
         if (port and 0x4000 == 0) {
             when ((port ushr 8) and 3) {
-                0 -> crtc.selectRegister(value)
+                0 -> { asic?.lockSequenceByte(value); crtc.selectRegister(value) }
                 1 -> crtc.writeRegister(value)
                 else -> Unit
             }

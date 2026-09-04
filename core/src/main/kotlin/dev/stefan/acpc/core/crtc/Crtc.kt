@@ -75,6 +75,12 @@ class Crtc(val type: CrtcType) {
     var vsyncEnded = false
         private set
 
+    /** Set for one tick when a new CRTC frame started (VCC and RLC back to 0). */
+    var frameStarted = false
+        private set
+
+    private var pendingSplit = -1
+
     init {
         reset()
     }
@@ -91,7 +97,16 @@ class Crtc(val type: CrtcType) {
         hsync = false; hsyncCount = 0
         vsync = false; vsyncLines = 0
         hDisplay = true; vDisplay = true
+        pendingSplit = -1
         clearEvents()
+    }
+
+    /**
+     * ASIC split screen: the next scan line (and the rest of its character
+     * row) starts at [address] instead of the current row address.
+     */
+    fun splitAt(address: Int) {
+        pendingSplit = address and 0x3FFF
     }
 
     // ---- CPU interface -----------------------------------------------------
@@ -133,6 +148,7 @@ class Crtc(val type: CrtcType) {
     private fun clearEvents() {
         hsyncStarted = false; hsyncEnded = false
         vsyncStarted = false; vsyncEnded = false
+        frameStarted = false
     }
 
     private fun vsyncWidth(): Int = when (type) {
@@ -198,6 +214,7 @@ class Crtc(val type: CrtcType) {
             } else {
                 rlc = (rlc + 1) and 0x1F
                 ma = maLine
+                applySplit()
             }
             return
         }
@@ -221,6 +238,15 @@ class Crtc(val type: CrtcType) {
             rlc++
             ma = maLine
         }
+        applySplit()
+    }
+
+    private fun applySplit() {
+        if (pendingSplit < 0) return
+        maLine = pendingSplit
+        maNextLine = maLine
+        ma = maLine
+        pendingSplit = -1
     }
 
     private fun startFrame() {
@@ -232,6 +258,8 @@ class Crtc(val type: CrtcType) {
         maNextLine = maLine
         ma = maLine
         vDisplay = true
+        pendingSplit = -1
+        frameStarted = true
         checkRow()
     }
 
