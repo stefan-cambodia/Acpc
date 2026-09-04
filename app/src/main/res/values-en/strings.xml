@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="title_settings">Settings</string>
-    <string name="library_open_dsk">Open a DSK / SNA / CDT</string>
+    <string name="library_open_dsk">Open a DSK / CDT / CPR / SNA</string>
     <string name="library_remote">Remote server</string>
     <string name="library_favorites">Favourites</string>
     <string name="library_all_games">All</string>
@@ -64,7 +64,7 @@
     <string name="toast_cache_hit">Already cached</string>
     <string name="error_cannot_read_file">This file cannot be read.</string>
     <string name="error_cannot_read_dsk">This DSK image cannot be read.</string>
-    <string name="error_not_a_dsk">This file is not a DSK image, a SNA snapshot or a CDT tape.</string>
+    <string name="error_not_a_dsk">This file is not a DSK image, a CDT tape, a CPR cartridge or a SNA snapshot.</string>
     <string name="error_invalid_cdt">Unreadable CDT tape: %1$s</string>
     <string name="details_tape">CDT tape, %1$d blocks, %2$d min %3$02d s</string>
     <string name="menu_rewind_tape">Rewind the tape</string>

@@ -23,6 +23,12 @@ scrolling, split screen, raster interrupt, DMA sound). It is written in Kotlin w
 - Save states, auto-start of the disc program, adjustable speed, scaling modes,
   scanlines, screen orientation.
 
+## Manual
+
+[docs/MANUAL.md](docs/MANUAL.md) is the user manual, with screenshots: ROM
+import, the library, remote servers, playing, save states, tapes, cartridges
+and every setting.
+
 ## Building
 
 Open the project in Android Studio (AGP 9.3, compileSdk 37) or run:

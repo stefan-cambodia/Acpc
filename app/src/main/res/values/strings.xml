@@ -4,7 +4,7 @@
     <string name="title_settings">Paramètres</string>
 
     <!-- Library -->
-    <string name="library_open_dsk">Ouvrir un DSK / SNA / CDT</string>
+    <string name="library_open_dsk">Ouvrir un DSK / CDT / CPR / SNA</string>
     <string name="library_remote">Serveur distant</string>
     <string name="library_favorites">Favoris</string>
     <string name="library_all_games">Tous</string>
@@ -71,7 +71,7 @@
     <!-- Errors -->
     <string name="error_cannot_read_file">Impossible de lire ce fichier.</string>
     <string name="error_cannot_read_dsk">Impossible de lire cette image DSK.</string>
-    <string name="error_not_a_dsk">Ce fichier n\'est ni une image DSK, ni un instantané SNA, ni une cassette CDT.</string>
+    <string name="error_not_a_dsk">Ce fichier n\'est ni une image DSK, ni une cassette CDT, ni une cartouche CPR, ni un instantané SNA.</string>
     <string name="error_invalid_cdt">Cassette CDT illisible : %1$s</string>
     <string name="details_tape">Cassette CDT, %1$d blocs, %2$d min %3$02d s</string>
     <string name="menu_rewind_tape">Rembobiner la cassette</string>
