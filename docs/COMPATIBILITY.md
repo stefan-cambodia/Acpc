@@ -111,7 +111,7 @@ own at the first pass. What stopped the other 26, and what came of it:
 A random sample of 220 other titles from the same collection (every genre:
 text adventures, sports, puzzles, budget games, French and Spanish
 releases, a few 1990s homebrews) went through the same 90 s run. The
-first pass reached a title, a menu, a prompt or gameplay for 205 of them.
+first pass reached a title, a menu, a prompt or gameplay for 207 of them.
 The others:
 
 | Title | Symptom | Cause | Outcome |
