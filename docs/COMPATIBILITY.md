@@ -61,7 +61,11 @@ them). Per-disc files: `<name>.nudges` (comma-separated tokens: `SPACE`,
 `RETURN`, `ENTER`, `FIRE`, a letter or a digit; `token@25` forces it at that
 second, once), `<name>.nonudge`, `<name>.hold` (frames a nudged key is held, default 12), `<name>.play` (after the nudges, wave the
 joystick and fire so sprites, scrolling and collisions run), `<name>.secs`,
-`<name>.cmd`, `<name>.464`.
+`<name>.cmd`, `<name>.464`, `<name>.swap` (`second:file.dsk` lines, to put
+the second disc of a set in the drive). The drive counts as idle when its
+motor is off or when it has not seeked or read for three seconds, since
+some games (Prehistorik 2, Super Cauldron) keep the motor running at a
+prompt.
 
 With 90 s runs, gameplay was reached and rendered correctly in Bomb Jack
 (attract mode after the trainer prompts), Commando, Dizzy III, Elite
@@ -72,6 +76,35 @@ second part at 70 s (loading pictures drawn progressively, drive active).
 
 Games verified interactively on a phone (played, not only booted): Live and
 Let Die (Domark), Sean McManus collection programs.
+
+## Wide sweep: 203 discs
+
+A second batch took 208 well-known titles from the archive.org collection
+(1984-1999, UK, French, Spanish and German releases, originals, cracks and
+trainers; 5 were cartridges) and ran the 203 discs for 90 s, then the
+stragglers for 180 s. Contact sheets of the last screenshot of each game
+were checked by eye, and every screenshot of a run was compared with the
+run before each change, so that a fix could not silently break another
+game.
+
+177 reached a title screen, a menu, a trainer prompt or gameplay on their
+own at the first pass. What stopped the other 26, and what came of it:
+
+| Title | Symptom | Cause | Outcome |
+|-------|---------|-------|---------|
+| Barbarian II, Bomb Jack II, Super Wonderboy, Vindicators, Nigel Mansell's Grand Prix | back to BASIC (or a reset) right after `RUN"` | auto-start picked a file by name: a binary whose entry address is 0 (`LOADER.BIN`), while the loader was `DISC.BIN` (a protected BASIC program) | auto-start reads the AMSDOS headers; all five now reach their menus or gameplay |
+| North & South | `RUN"s6<<<<<<.<<<` "Bad command" | CP/M game on a custom format: the "directory" was track data | no AMSDOS sectors where the directory should be: boots with `|CPM` |
+| Turrican | two copies of the HUD over garbage | the game lowers R4 below the row counter; the CRTC ended the frame instead of letting the counter wrap at 127, which put the game's two-frame split out of phase | CRTC counters compare for equality and wrap; title and gameplay correct |
+| Thunder Blade | HUD missing in play | two CRTC frames per picture, each with its own VSYNC; the monitor model obeyed both | monitor vertical hold (a VSYNC is obeyed after 262 lines, free run after 340): HUD below the play area |
+| Out Run | race screen stays black | the stage table is read from disc 2 after the menu; the disc 2 image has an empty track size table (CPDRead 3.24) and loaded as blank | tolerant DSK reader; with disc 2 inserted before choosing "1", the race runs |
+| Chip's Challenge, Puffy's Saga | "START TAPE", black screen | wait for their second disc ("rewind to the start of side 2") | work with disc 2 in the drive; the in-game **Change disc…** offers and downloads it |
+| Prehistorik 2, Super Cauldron | monitor synchronisation screen | harness: no nudge while the motor ran | gameplay once nudged |
+| Zap't'Balls | "Bad command" | harness: types junk into the level file name prompt | runs; the prompt wants RETURN |
+| Double Dragon II, Ghouls'n Ghosts, Myth, Trantor, Zynaps, Chase H.Q., Galactic Games | black or static screen at 90 s | long decrunching or loading | menus or gameplay by 120-180 s |
+| Mercs | screen of garbage at 80-110 s | shows memory while it decrunches | reaches its control menu |
+| Hero Quest - Return of the Witchlord | "Cannot find .EMS file" | an expansion that needs the Hero Quest disc | not a fault |
+| Ghostbusters II, Shadow of the Beast | "Turn disk over", "Insert disc side 2" | second disc needed | not a fault |
+| Fire and Forget | black | the image is flagged `[b]` (bad dump) | not a fault |
 
 ## Tapes
 
