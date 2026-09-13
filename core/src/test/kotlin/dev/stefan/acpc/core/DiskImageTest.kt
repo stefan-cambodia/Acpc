@@ -72,6 +72,16 @@ class DiskImageTest {
     }
 
     @Test
+    fun `extended images with an empty track size table still load their tracks`() {
+        val full = DskFormat.write(DiskImage.formattedData())
+        for (i in 0x34 until 0x100) full[i] = 0
+        val image = DskFormat.read(full)
+        assertNotNull(image.track(0, 0))
+        assertNotNull(image.track(0, 39))
+        assertEquals(0xC1, image.track(0, 39)!!.sectors.minOf { it.r })
+    }
+
+    @Test
     fun `truncated images keep the readable tracks`() {
         val full = DskFormat.write(DiskImage.formattedData())
         val truncated = full.copyOf(full.size / 2)

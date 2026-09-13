@@ -136,7 +136,12 @@ object DskFormat {
             var offset = 256
             for (t in 0 until trackCount) {
                 for (s in 0 until sides) {
-                    val trackSize = if (extended) (bytes[0x34 + t * sides + s].toInt() and 0xFF) * 256 else standardTrackSize
+                    var trackSize = if (extended) (bytes[0x34 + t * sides + s].toInt() and 0xFF) * 256 else standardTrackSize
+                    if (trackSize == 0 && extended) {
+                        // Some images (CPDRead 3.24) leave the track size table empty but store
+                        // the tracks anyway: take a header for this very track at its size.
+                        trackSize = headerTrackSize(bytes, offset, t, s)
+                    }
                     if (trackSize == 0) continue // unformatted
                     if (offset + 256 > bytes.size) {
                         // Truncated image: keep what we have.
@@ -187,6 +192,23 @@ object DskFormat {
         } catch (e: Exception) {
             throw InvalidDiskImageException("Corrupted DSK image: ${e.message}", e)
         }
+    }
+
+    /**
+     * Size of the extended track block at [offset] when it holds a header for
+     * track [t], side [s] (header plus sector data, in 256-byte steps), else 0.
+     */
+    private fun headerTrackSize(bytes: ByteArray, offset: Int, t: Int, s: Int): Int {
+        if (offset + 256 > bytes.size || ascii(bytes, offset, 10) != TRACK_SIGNATURE) return 0
+        if ((bytes[offset + 0x10].toInt() and 0xFF) != t || (bytes[offset + 0x11].toInt() and 0xFF) != s) return 0
+        val sectorCount = bytes[offset + 0x15].toInt() and 0xFF
+        if (sectorCount > MAX_SECTORS) return 0
+        var size = 256
+        for (i in 0 until sectorCount) {
+            val info = offset + 0x18 + i * 8
+            size += (bytes[info + 6].toInt() and 0xFF) or ((bytes[info + 7].toInt() and 0xFF) shl 8)
+        }
+        return (size + 255) / 256 * 256
     }
 
     /** Serialises an image in the extended DSK format. */

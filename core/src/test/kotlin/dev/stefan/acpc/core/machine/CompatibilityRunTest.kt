@@ -23,7 +23,9 @@ import javax.imageio.ImageIO
  *
  * Tagged "slow": run with `./gradlew :core:test -PslowTests --tests '*CompatibilityRunTest*'`.
  * Per-disc options: `<name>.cmd` (command to type instead of auto-start),
- * `<name>.keys` (text typed after 8 s), `<name>.secs` (duration), `<name>.464` (use a CPC 464).
+ * `<name>.keys` (text typed after 8 s), `<name>.secs` (duration), `<name>.464` (use a CPC 464),
+ * `<name>.swap` (`second:file.dsk` lines: puts another disc in drive A at that second, for
+ * games that ask for their second disc).
  */
 @Tag("slow")
 class CompatibilityRunTest {
@@ -76,6 +78,9 @@ class CompatibilityRunTest {
         }
         if (command != null) emu.typeText(command)
         val extra = File(diskDir, "$name.keys").takeIf { it.exists() }?.readText()
+        val swaps = File(diskDir, "$name.swap").takeIf { it.exists() }?.readLines().orEmpty()
+            .filter { it.contains(':') }
+            .associate { line -> line.substringBefore(':').trim().toInt() to File(line.substringAfter(':').trim()).let { if (it.isAbsolute) it else File(diskDir, it.path) } }
         val seconds = (File(diskDir, "$name.secs").takeIf { it.exists() }?.readText()?.trim()?.toIntOrNull()) ?: 40
         // Nudges get past title screens and menus: sent one at a time when the
         // picture has been static for a while and the disc is idle (`<name>.nonudge` disables them).
@@ -117,6 +122,7 @@ class CompatibilityRunTest {
             if (h != lastHash) { changes++; staticSeconds = 0 } else staticSeconds++
             lastHash = h
             if (second == 8 && extra != null) emu.typeText(extra)
+            swaps[second]?.let { other -> emu.loadDisk(0, other.readBytes(), other.name); sent += "DISC:${other.name}@${second}s" }
             // Idle: motor off, or no seek or transfer for three seconds (some games
             // leave the motor running while they wait for a key).
             val access = emu.machine.fdc.accessCount

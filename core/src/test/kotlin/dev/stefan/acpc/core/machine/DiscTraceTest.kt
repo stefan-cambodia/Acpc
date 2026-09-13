@@ -36,6 +36,8 @@ import java.io.File
  *    seconds after the command (`\n` for RETURN, `~` for the joystick fire).
  *  - `ACPC_TRACE_DUMP`: `from:len` in hex, memory as mapped at the end of the
  *    run, saved as `dump-<from>.bin`.
+ *  - `ACPC_TRACE_FDC`: print every disc controller command and result with
+ *    the frame number and the PC.
  *  - `ACPC_TRACE_OUT`: output directory for screenshots (default /tmp).
  *  - `ACPC_TRACE_464`: boot a CPC 464 instead.
  */
@@ -143,6 +145,9 @@ class DiscTraceTest {
                 0 -> println("$where CRTC select %d".format(value and 0x1F))
                 1 -> println("$where CRTC R%d=%d (&%02X)".format(crtc.selectedRegister, value, value))
             }
+        }
+        if (System.getenv("ACPC_TRACE_FDC") != null) {
+            m.fdc.traceListener = { line -> println("f=$frames pc=%04X FDC $line".format(m.cpu.pc)) }
         }
         val maxFrames = (System.getenv("ACPC_TRACE_FRAMES") ?: "3000").toInt()
         while (frames < maxFrames && !stopped) {

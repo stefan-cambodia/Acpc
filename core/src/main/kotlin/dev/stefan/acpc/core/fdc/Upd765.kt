@@ -257,8 +257,12 @@ class Upd765 {
 
     // ---- Command execution -------------------------------------------------
 
+    /** Debugging aid: told every command (`C` + bytes) and every result (`R` + bytes) while set. */
+    @Volatile var traceListener: ((String) -> Unit)? = null
+
     private fun executeCommand() {
         val code = command[0] and 0x1F
+        traceListener?.invoke("C " + (0 until commandLength).joinToString(" ") { "%02X".format(command[it]) })
         if (code != 0x03 && code != 0x04 && code != 0x08) accessCount++
         when (code) {
             0x03 -> {
@@ -289,6 +293,7 @@ class Upd765 {
 
     private fun setResult(vararg values: Int) {
         for (i in values.indices) result[i] = values[i] and 0xFF
+        traceListener?.invoke("R " + values.joinToString(" ") { "%02X".format(it and 0xFF) })
         resultLength = values.size
         resultIndex = 0
         phase = Phase.RESULT
