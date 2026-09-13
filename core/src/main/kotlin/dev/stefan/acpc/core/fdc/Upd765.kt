@@ -61,6 +61,7 @@ class Upd765 {
 
     // Seek state per drive
     private val seekTarget = IntArray(2)
+    /** Machine time the head position was last brought up to date (see [stepHeads]). */
     private val seekEndUs = LongArray(2)
     private val seeking = BooleanArray(2)
     private val seekDone = BooleanArray(2)
@@ -136,13 +137,7 @@ class Upd765 {
     /** Brings the controller up to date with the machine clock (microseconds). */
     fun catchUp(us: Long) {
         now = us
-        for (i in 0..1) {
-            if (seeking[i] && now >= seekEndUs[i]) {
-                seeking[i] = false
-                seekDone[i] = true
-                drives[i].cylinder = seekTarget[i]
-            }
-        }
+        stepHeads()
         when (phase) {
             Phase.EXEC_READ, Phase.EXEC_WRITE, Phase.EXEC_FORMAT, Phase.EXEC_SCAN -> {
                 if (now >= dataReadyAtUs && now > byteDeadlineUs) overrun()
@@ -152,6 +147,36 @@ class Upd765 {
     }
 
     private fun isReady(drive: Int): Boolean = motorOn && drives[drive].hasDisk
+
+    /**
+     * Moves the heads of the seeking drives one cylinder per step pulse. The
+     * pulses come from the controller's own step-rate clock, so a SEEK issued
+     * again while the head travels carries on from where the head is: some
+     * boot loaders repeat SEEK and SENSE INTERRUPT STATUS until the seek is
+     * reported complete (The Krypton Factor).
+     */
+    private fun stepHeads() {
+        for (i in 0..1) {
+            if (!seeking[i]) continue
+            val d = drives[i]
+            if (fastMode) {
+                d.cylinder = seekTarget[i]
+            } else {
+                val stepUs = stepRateMs * 1000L
+                val pulses = now / stepUs - seekEndUs[i] / stepUs
+                if (pulses > 0) {
+                    val distance = seekTarget[i] - d.cylinder
+                    val moves = minOf(pulses, Math.abs(distance).toLong()).toInt()
+                    d.cylinder += if (distance > 0) moves else -moves
+                }
+            }
+            seekEndUs[i] = now
+            if (d.cylinder == seekTarget[i]) {
+                seeking[i] = false
+                seekDone[i] = true
+            }
+        }
+    }
 
     private fun rotationalDelayUs(track: DiskImage.Track, sectorIndex: Int): Long {
         if (fastMode) return 0
@@ -333,13 +358,14 @@ class Upd765 {
             finishNoResult()
             return
         }
+        stepHeads()
         val d = drives[drive]
         val clamped = target.coerceIn(0, FloppyDrive.MAX_CYLINDER)
-        val steps = Math.abs(clamped - d.cylinder)
         seekTarget[drive] = clamped
-        seekEndUs[drive] = if (fastMode) now + 1 else now + steps.toLong() * stepRateMs * 1000L + 200
-        seeking[drive] = true
-        seekDone[drive] = false
+        seekEndUs[drive] = now
+        // Already there: the seek ends at once.
+        seeking[drive] = d.cylinder != clamped
+        seekDone[drive] = d.cylinder == clamped
         finishNoResult()
     }
 

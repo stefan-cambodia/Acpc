@@ -12,11 +12,13 @@ object AmsdosCatalog {
 
     /**
      * The 128-byte header AMSDOS writes in front of BASIC and binary files.
-     * [type]: bit 0 = protected, bits 1-3 = 0 BASIC, 1 binary, 2 screen, 3 ASCII.
+     * [type]: bit 0 = protected, bits 1-3 = 0 BASIC, 1 binary, 2 screen, 3 ASCII, bits 4-7 = version.
      */
     class FileHeader(val type: Int, val loadAddress: Int, val length: Int, val execAddress: Int) {
-        val isBasic: Boolean get() = (type ushr 1) and 7 == 0
-        val isBinary: Boolean get() = (type ushr 1) and 7 == 1
+        // The high nibble (a version field) is 0 in files BASIC can run; anything
+        // else ("RECORDS.BIN" of type &F1 on Winter Games) is a "File type error".
+        val isBasic: Boolean get() = type and 0xFE == 0
+        val isBinary: Boolean get() = type and 0xFE == 2
     }
 
     class Entry(
@@ -167,7 +169,8 @@ object AmsdosCatalog {
         val candidates = files.filter { it.extension.uppercase() !in EXCLUDED_EXTENSIONS }
         if (candidates.isEmpty()) return null
         val discName = normalise(image.name.substringBeforeLast('.'))
-        val best = candidates.maxByOrNull { score(it, discName) } ?: return null
+        val initials = titleInitials(image.name)
+        val best = candidates.maxByOrNull { score(it, discName, initials) } ?: return null
         // Nothing on a system disc can be run from BASIC: it boots from its boot sector.
         if (!best.runnable && best.contentKnown && format == Format.SYSTEM) return "|CPM\n"
         val name = best.fileName
@@ -176,7 +179,19 @@ object AmsdosCatalog {
 
     private fun normalise(s: String): String = s.uppercase().replace(Regex("[^A-Z0-9]"), "")
 
-    private fun score(e: Entry, discName: String): Int {
+    private val ROMAN = Regex("^(I|II|III|IV|V|VI|VII|VIII|IX|X)$")
+
+    /**
+     * Initials of the title in a collection file name, before its "(year)(publisher)"
+     * tags: "Fer & Flamme (1986)(Ubi Soft)" -> "FF", "Bomb Jack II" -> "BJII".
+     */
+    fun titleInitials(fileName: String): String {
+        val title = fileName.substringBefore('(').substringBefore('[').substringBeforeLast('.').uppercase()
+        return title.split(Regex("[^A-Z0-9]+")).filter { it.isNotEmpty() }
+            .joinToString("") { if (ROMAN.matches(it) || it.all(Char::isDigit)) it else it.take(1) }
+    }
+
+    private fun score(e: Entry, discName: String, initials: String): Int {
         val name = e.name.uppercase()
         val ext = e.extension.uppercase()
         var score = 0
@@ -216,6 +231,8 @@ object AmsdosCatalog {
             else if (n.length >= 4 && discName.contains(n)) score += 70
             else if (discName.take(4) == n.take(4)) score += 40
         }
+        // Loaders named after the title's initials: "F&F" on Fer & Flamme, "BJII" on Bomb Jack II.
+        if (initials.length >= 2 && n == initials) score += 80
         // Development tools and single-letter names are rarely the game.
         if (name in TOOL_NAMES) score -= 250
         if (name.length <= 1) score -= 60

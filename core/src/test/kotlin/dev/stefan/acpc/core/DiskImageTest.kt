@@ -159,12 +159,14 @@ class DiskImageTest {
             file("CODE", "N01", 2, exec = 0x8000)       // later stage with an unusual extension
             file("DISC", "BIN", 1, load = 0x170)        // protected BASIC despite the extension
             file("NOTES", "", null, firstBytes = "Hello".toByteArray())
+            file("RECORDS", "BIN", 0xF1)                // high scores with a header BASIC refuses to run
         }.build()
         val files = AmsdosCatalog.list(image).associateBy { it.fileName }
         assertEquals(false, files.getValue("LOADER.BIN").runnable)
         assertEquals(true, files.getValue("DISC.BIN").runnable)
         assertEquals(true, files.getValue("DISC.BIN").header!!.isBasic)
         assertEquals(false, files.getValue("NOTES").runnable)
+        assertEquals(false, files.getValue("RECORDS.BIN").runnable)
         assertEquals("RUN\"DISC.BIN\n", AmsdosCatalog.autoStartCommand(image))
     }
 
@@ -188,6 +190,18 @@ class DiskImageTest {
         val files = AmsdosCatalog.list(image).associateBy { it.fileName }
         assertEquals(true, files.getValue("README.BAS").asciiBasic)
         assertEquals("RUN\"MANSELL.BIN\n", AmsdosCatalog.autoStartCommand(image))
+    }
+
+    @Test
+    fun `auto start recognises a loader named after the title's initials`() {
+        assertEquals("FF", AmsdosCatalog.titleInitials("Fer & Flamme (1986)(Ubi Soft)(fr)(Disk 1 of 4).dsk"))
+        assertEquals("BJII", AmsdosCatalog.titleInitials("Bomb Jack II (1987)(Elite Systems)[cr ACS].dsk"))
+        val image = CatalogBuilder().apply {
+            file("DEF1", "BAS", 1, load = 0x170)
+            file("F&F", "BAS", 0, load = 0x170)
+            file("W86", "BAS", 0, load = 0x170)
+        }.build("Fer & Flamme (1986)(Ubi Soft)(fr)(Disk 1 of 4).dsk")
+        assertEquals("RUN\"F&F.BAS\n", AmsdosCatalog.autoStartCommand(image))
     }
 
     @Test
