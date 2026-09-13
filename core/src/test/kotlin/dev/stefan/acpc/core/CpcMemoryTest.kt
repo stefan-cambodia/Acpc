@@ -75,6 +75,20 @@ class CpcMemoryTest {
     }
 
     @Test
+    fun `6128 ignores the expansion bank bits`() {
+        // International 3D Tennis writes its configurations with bits 3-5 set.
+        val mem = CpcMemory(CpcModel.CPC6128, TestRoms.synthetic())
+        mem.setRomEnables(lowerEnabled = false, upperEnabled = false)
+        for (page in 0 until 8) mem.ram[page * 0x4000] = page.toByte()
+        mem.setRamConfig(0xFF)
+        assertEquals(7, mem.read(0x4000))
+        mem.setRamConfig(0xF2)
+        assertEquals(4, mem.read(0x0000))
+        mem.setRamConfig(0xF8)
+        assertEquals(1, mem.read(0x4000))
+    }
+
+    @Test
     fun `464 ignores RAM configuration`() {
         val mem = CpcMemory(CpcModel.CPC464, TestRoms.synthetic())
         mem.setRomEnables(lowerEnabled = false, upperEnabled = false)

@@ -135,7 +135,9 @@ class CpcMemory(
 
     private fun remap() {
         val config = ramConfig and 7
-        val bank = (ramConfig ushr 3) and 7
+        // Bits 3-5 select a 64 KB bank of a memory expansion; the 6128's own
+        // decoder ignores them, so &C7 and &FF map the same extra block.
+        val bank = if (ram.size > 128 * 1024) (ramConfig ushr 3) and 7 else 0
         val expansionBase = 4 + bank * 4 // physical page of the selected 64 KB expansion bank
         val pages = IntArray(4)
         when (config) {
