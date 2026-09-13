@@ -169,7 +169,8 @@ need for a game that asks you to load its second part.
 ## 8. Cartridges: CPC Plus and GX4000
 
 A `.cpr` cartridge starts a GX4000 console: no ROM to import, the cartridge
-holds the firmware. The Plus hardware is emulated, so these games get their
+holds the firmware. Raw cartridge dumps named `.bin` (64 to 512 KB, as some
+game sets distribute them, zipped or not) are accepted as well. The Plus hardware is emulated, so these games get their
 hardware sprites, their 4096-colour palette, the split screen and the DMA
 sound chip.
 

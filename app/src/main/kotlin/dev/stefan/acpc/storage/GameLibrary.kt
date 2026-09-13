@@ -3,6 +3,7 @@ package dev.stefan.acpc.storage
 import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
+import dev.stefan.acpc.core.cartridge.Cartridge
 import dev.stefan.acpc.core.disk.DskFormat
 import dev.stefan.acpc.core.snapshot.SnaFormat
 import dev.stefan.acpc.core.tape.CdtFormat
@@ -143,6 +144,7 @@ class GameLibrary(context: Context) {
         var name = originalName
         if (isZip(bytes)) {
             val (member, memberBytes) = extractFromZip(bytes, listOf(".dsk", ".sna", ".cdt", ".cpr"))
+                ?: extractFromZip(bytes, listOf(".bin"))?.takeIf { (n, b) -> Cartridge.isRawDump(n, b) }
                 ?: throw ImportException(app.getString(zipWithoutDskMessage(bytes)))
             bytes = memberBytes
             name = member
@@ -151,7 +153,7 @@ class GameLibrary(context: Context) {
             DskFormat.isDsk(bytes) -> GameEntry.KIND_DSK
             SnaFormat.isSna(bytes) -> GameEntry.KIND_SNA
             CdtFormat.isCdt(bytes) -> GameEntry.KIND_CDT
-            dev.stefan.acpc.core.cartridge.Cartridge.isCpr(bytes) -> GameEntry.KIND_CPR
+            Cartridge.isCpr(bytes) || Cartridge.isRawDump(name, bytes) -> GameEntry.KIND_CPR
             else -> throw ImportException(app.getString(dev.stefan.acpc.R.string.error_not_a_dsk))
         }
         // Validate the structure now so the emulator never sees a broken image.
@@ -168,7 +170,7 @@ class GameLibrary(context: Context) {
                 throw ImportException(app.getString(dev.stefan.acpc.R.string.error_invalid_cdt, it.message ?: ""))
             }
         } else {
-            runCatching { dev.stefan.acpc.core.cartridge.Cartridge.parse(bytes, name) }.getOrElse {
+            runCatching { Cartridge.parse(bytes, name) }.getOrElse {
                 throw ImportException(app.getString(dev.stefan.acpc.R.string.error_invalid_cpr, it.message ?: ""))
             }
         }

@@ -71,4 +71,13 @@ class CartridgeTest {
         assertTrue(Cartridge.isCpr(cpr(0 to 0)))
         assertFalse(Cartridge.isCpr(page))
     }
+
+    @Test
+    fun `raw dumps are recognised by name and size`() {
+        assertTrue(Cartridge.isRawDump("Pang (1990)(Ocean).bin", ByteArray(131072)))
+        assertTrue(Cartridge.isRawDump("GAME.BIN", ByteArray(524288)))
+        assertFalse(Cartridge.isRawDump("Pang (1990)(Ocean).bin", ByteArray(32768)))   // a firmware ROM size
+        assertFalse(Cartridge.isRawDump("loader.bin", ByteArray(4096)))
+        assertFalse(Cartridge.isRawDump("Pang.dsk", ByteArray(131072)))
+    }
 }

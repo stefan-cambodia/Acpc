@@ -51,6 +51,15 @@ class Cartridge private constructor(private val pages: Array<ByteArray>, val nam
                 bytes[8] == 'A'.code.toByte() && bytes[9] == 'M'.code.toByte() &&
                 bytes[10] == 'S'.code.toByte() && bytes[11] == '!'.code.toByte()
 
+        /**
+         * A raw cartridge dump as game sets distribute them ("Pang (1990)(Ocean).bin"):
+         * a `.bin` of 64, 128, 256 or 512 KB. No CPC file or ROM has those sizes.
+         */
+        fun isRawDump(name: String, bytes: ByteArray): Boolean =
+            name.lowercase().endsWith(".bin") && bytes.size in RAW_DUMP_SIZES
+
+        private val RAW_DUMP_SIZES = setOf(4 * PAGE_SIZE, 8 * PAGE_SIZE, 16 * PAGE_SIZE, 32 * PAGE_SIZE)
+
         /** Parses a `.cpr` container or a raw dump. Throws [InvalidCartridgeException]. */
         fun parse(bytes: ByteArray, name: String = "cartridge.cpr"): Cartridge {
             if (isCpr(bytes)) return parseCpr(bytes, name)
