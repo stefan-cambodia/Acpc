@@ -5,15 +5,35 @@ import dev.stefan.acpc.core.machine.CrtcType
 /**
  * Motorola 6845 compatible CRT controller, as used in the Amstrad CPC.
  *
- * The CRTC is clocked at 1 MHz: [tick] advances by one character (1 µs) and
- * updates the horizontal / vertical counters, the display enable, HSYNC and
- * VSYNC outputs and the memory address (MA) / raster address (RA) that the
- * Gate Array uses to fetch video RAM.
+ * The CRTC is clocked at 1 MHz: [tick] and [advance] together emulate one
+ * character (1 µs): the counters, the display enable, HSYNC / VSYNC and the
+ * memory address (MA) / raster address (RA) the Gate Array reads video RAM
+ * with.
  *
- * Only the behaviour relevant to CPC software is modelled: the counters, the
- * sync generation (including vertical total adjust and programmable sync
- * widths) and the type-dependent register masks / read-back rules. The
- * cursor and light pen are not emulated.
+ * ## Counters and comparisons
+ * The chip does not compare its counters with the registers at the moment
+ * a row or a frame ends: it latches "this is the last line of the row"
+ * (counter RA equal to R9) and "this is the last row of the frame" (VCC
+ * equal to R4) when a counter reaches the register or when the register is
+ * written, and acts on the latch at the end of the line. Split screen tricks
+ * ("ruptures") that rewrite R4, R9, R6 and R7 while the beam runs depend on
+ * these details:
+ *  - a VCC already past a lowered R4 never matches: the counter runs on to
+ *    127 and wraps (Turrican switches between two CRTC frames this way);
+ *  - a row that did match R4 but ends with R4 changed resets VCC to 0 on
+ *    the HD6845S instead of starting the vertical total adjust;
+ *  - on the HD6845S a write to R4 during the last line of a row does not
+ *    change the latch, and a write to R9 keeps a latched last line while
+ *    the last row is latched (Pinball Dreams' in-game split);
+ *  - the vertical total adjust lines keep counting rows, so R6 and R7 can
+ *    still trigger inside them;
+ *  - R12/R13 are taken at the start of row 0 (on the UM6845R at every line
+ *    of row 0).
+ *
+ * Type-dependent details: R3 widths (the UM6845R has a fixed 16-line VSYNC),
+ * register read-back, the UM6845R status register, what hides the display
+ * (R8 skew bits on the HD6845S, R6 = 0 on the UM6845R). The cursor, light
+ * pen and interlace are not emulated.
  */
 class Crtc(val type: CrtcType) {
 
@@ -30,23 +50,29 @@ class Crtc(val type: CrtcType) {
     var hcc = 0
         private set
 
-    /** Vertical character row counter (0..R4). */
+    /** Vertical character row counter (7 bits). */
     var vcc = 0
         private set
 
-    /** Raster line counter inside the current character row (0..R9). */
+    /** Raster line counter inside the current character row (5 bits). */
     var rlc = 0
         private set
 
     private var vtac = 0           // vertical total adjust line counter
-    private var inAdjust = false   // currently in the vertical total adjust lines
+    private var inAdjust = false   // counting vertical total adjust lines
+
+    /** Latched: the current line is the last one of its row (RA matched R9). */
+    private var lastLine = false
+
+    /** Latched: the current row is the last one of the frame (VCC matched R4). */
+    private var lastRow = false
 
     /** Memory address counter (14 bits). */
     var ma = 0
         private set
 
-    private var maLine = 0         // MA at the start of the current character row
-    private var maNextLine = 0     // MA latched at hcc == R1 on the last raster line
+    private var maLine = 0         // MA every line of the current row starts from
+    private var vOffDelay = 0      // lines before the display turns off (R6 match)
 
     // ---- Outputs -----------------------------------------------------------
 
@@ -62,7 +88,11 @@ class Crtc(val type: CrtcType) {
     private var vDisplay = false
 
     /** True while the current character must be drawn from video RAM. */
-    val displayEnabled: Boolean get() = hDisplay && vDisplay
+    val displayEnabled: Boolean
+        get() = hDisplay && vDisplay && when (type) {
+            CrtcType.TYPE0_HD6845S -> regs[8] and 0x30 != 0x30   // display skew "11" = no display
+            CrtcType.TYPE1_UM6845R -> regs[6] != 0
+        }
 
     // ---- Events of the last tick -----------------------------------------
 
@@ -75,7 +105,7 @@ class Crtc(val type: CrtcType) {
     var vsyncEnded = false
         private set
 
-    /** Set for one tick when a new CRTC frame started (VCC and RLC back to 0). */
+    /** Set for one tick when a new CRTC frame started (end of the vertical total adjust). */
     var frameStarted = false
         private set
 
@@ -93,7 +123,8 @@ class Crtc(val type: CrtcType) {
         regs[8] = 0; regs[9] = 7; regs[12] = 0x30; regs[13] = 0
         selectedRegister = 0
         hcc = 0; vcc = 0; rlc = 0; vtac = 0; inAdjust = false
-        ma = 0; maLine = 0; maNextLine = 0
+        lastLine = false; lastRow = false; vOffDelay = 0
+        ma = 0; maLine = 0
         hsync = false; hsyncCount = 0
         vsync = false; vsyncLines = 0
         hDisplay = true; vDisplay = true
@@ -118,7 +149,23 @@ class Crtc(val type: CrtcType) {
     fun writeRegister(value: Int) {
         val r = selectedRegister
         if (r > 17) return
-        regs[r] = value and MASKS[r]
+        var v = value and MASKS[r]
+        if (r == 0 && v == 0 && type == CrtcType.TYPE0_HD6845S) v = 1   // the HD6845S cannot count a line of one character
+        regs[r] = v
+        // Comparisons the new value makes true (or false) at once.
+        when (r) {
+            3 -> if (hcc == regs[2] && !hsync && hsyncWidth() != 0) startHsync()
+            4 -> when (type) {
+                CrtcType.TYPE0_HD6845S -> if (!lastLine) lastRow = vcc == v
+                CrtcType.TYPE1_UM6845R -> lastRow = vcc == v
+            }
+            6 -> if (vcc == v) vDisplay = false
+            7 -> if (vcc == v) startVsync()
+            9 -> when (type) {
+                CrtcType.TYPE0_HD6845S -> lastLine = rlc == v || (lastLine && lastRow && hcc > 1)
+                CrtcType.TYPE1_UM6845R -> lastLine = rlc == v
+            }
+        }
     }
 
     /** Read-back of the selected register (port &BFxx). */
@@ -138,7 +185,7 @@ class Crtc(val type: CrtcType) {
     fun readStatus(): Int = when (type) {
         CrtcType.TYPE0_HD6845S -> 0xFF
         // Bit 5 = vertical blanking (set outside the display area), bit 6 = light pen, bit 7 = update ready.
-        CrtcType.TYPE1_UM6845R -> if (vDisplay) 0x00 else 0x20
+        CrtcType.TYPE1_UM6845R -> if (vcc >= regs[6]) 0x20 else 0x00
     }
 
     /** Video RAM address of the first byte of the current character. */
@@ -151,39 +198,47 @@ class Crtc(val type: CrtcType) {
         frameStarted = false
     }
 
-    private fun vsyncWidth(): Int = when (type) {
+    /** HSYNC width in characters; 0 = no HSYNC on both types emulated. */
+    private fun hsyncWidth(): Int = regs[3] and 0x0F
+
+    /** VSYNC height in lines. */
+    private fun vsyncHeight(): Int = when (type) {
         CrtcType.TYPE0_HD6845S -> ((regs[3] ushr 4) and 0x0F).let { if (it == 0) 16 else it }
         CrtcType.TYPE1_UM6845R -> 16
     }
 
+    private fun startHsync() {
+        hsync = true
+        hsyncCount = 0
+        hsyncStarted = true
+    }
+
+    private fun startVsync() {
+        if (!vsync) vsyncStarted = true
+        vsync = true
+        vsyncLines = 0
+    }
+
     /**
-     * Advances by one character clock (1 µs). Call [videoAddress],
-     * [displayEnabled], [hsync] and [vsync] afterwards to know what the
-     * Gate Array must output for this character.
+     * First half of the character clock: horizontal comparisons for the
+     * character about to be output. Call [videoAddress], [displayEnabled],
+     * [hsync] and [vsync] afterwards to know what the Gate Array must output.
      */
     fun tick() {
-        val r1 = regs[1]
-        val r2 = regs[2]
-        val hsyncWidth = regs[3] and 0x0F
-
         // Horizontal sync end / start.
         if (hsync) {
             hsyncCount++
-            if (hsyncCount >= hsyncWidth) {
+            if (hsyncCount >= hsyncWidth()) {
                 hsync = false
                 hsyncEnded = true
             }
         }
-        if (hcc == r2 && hsyncWidth != 0 && !hsync) {
-            hsync = true
-            hsyncCount = 0
-            hsyncStarted = true
-        }
+        if (hcc == regs[2] && !hsync && hsyncWidth() != 0) startHsync()
 
-        // Horizontal display end.
-        if (hcc == r1) {
+        // Horizontal display end; on the last line of a row the next row starts here.
+        if (hcc == regs[1]) {
             hDisplay = false
-            if (rlc == regs[9] || inAdjust) maNextLine = ma
+            if (lastLine) maLine = ma
         }
     }
 
@@ -191,9 +246,7 @@ class Crtc(val type: CrtcType) {
     fun advance() {
         clearEvents()
         ma = (ma + 1) and 0x3FFF
-        // The 6845 compares its counters for equality: a counter already past a
-        // register that was just lowered runs on to its overflow (255 characters,
-        // 127 rows, 31 lines) and wraps. Split screen tricks ("ruptures") rely on it.
+        // A counter already past a lowered R0 runs on to 255 and wraps.
         if (hcc == regs[0]) {
             hcc = 0
             endOfLine()
@@ -206,50 +259,55 @@ class Crtc(val type: CrtcType) {
         hDisplay = true
         if (vsync) {
             vsyncLines++
-            if (vsyncLines >= vsyncWidth()) {
+            if (vsyncLines >= vsyncHeight()) {
                 vsync = false
                 vsyncEnded = true
             }
         }
-        if (inAdjust) {
-            vtac = (vtac + 1) and 0x1F
-            if (vtac == regs[5]) {
-                startFrame()
-            } else {
-                rlc = (rlc + 1) and 0x1F
-                ma = maLine
-                applySplit()
-            }
-            return
-        }
-        if (rlc == regs[9]) {
-            // End of the character row.
+
+        if (lastLine) {
             rlc = 0
-            maLine = maNextLine
-            ma = maLine
-            val lastRow = vcc == regs[4]
-            vcc = (vcc + 1) and 0x7F
+            lastLine = regs[9] == 0
             if (lastRow) {
-                if (regs[5] != 0) {
+                lastRow = regs[4] == 0
+                if (regs[4] == vcc || type == CrtcType.TYPE1_UM6845R) {
                     inAdjust = true
                     vtac = 0
+                    if (regs[5] != 0) vcc = (vcc + 1) and 0x7F
                 } else {
-                    startFrame()
-                    return
+                    // R4 changed after it matched: the HD6845S starts counting rows again.
+                    vcc = 0
                 }
+            } else {
+                vcc = (vcc + 1) and 0x7F
             }
-            checkRow()
         } else {
             rlc = (rlc + 1) and 0x1F
-            ma = maLine
+            if (rlc == regs[9]) lastLine = true
         }
+        if (vcc == regs[4]) lastRow = true
+
+        if (inAdjust) {
+            if (vtac == regs[5]) startFrame() else vtac = (vtac + 1) and 0x1F
+        }
+
+        if (vcc == 0 && (rlc == 0 || (type == CrtcType.TYPE1_UM6845R && (regs[5] == 0 || regs[4] != 0)))) {
+            maLine = ((regs[12] shl 8) or regs[13]) and 0x3FFF
+        }
+        if (rlc == 0) {
+            // The HD6845S hides the display one line late when R6 = 0.
+            if (vcc == regs[6]) vOffDelay = if (regs[6] == 0 && type == CrtcType.TYPE0_HD6845S) 2 else 1
+            if (vcc == regs[7] && (type != CrtcType.TYPE1_UM6845R || (regs[4] or regs[5]) != 0)) startVsync()
+        }
+        if (vOffDelay > 0 && --vOffDelay == 0) vDisplay = false
+
+        ma = maLine
         applySplit()
     }
 
     private fun applySplit() {
         if (pendingSplit < 0) return
         maLine = pendingSplit
-        maNextLine = maLine
         ma = maLine
         pendingSplit = -1
     }
@@ -259,40 +317,34 @@ class Crtc(val type: CrtcType) {
         vtac = 0
         vcc = 0
         rlc = 0
-        maLine = ((regs[12] shl 8) or regs[13]) and 0x3FFF
-        maNextLine = maLine
-        ma = maLine
         vDisplay = true
+        lastRow = regs[4] == 0
+        lastLine = regs[9] == 0
         pendingSplit = -1
         frameStarted = true
-        checkRow()
-    }
-
-    /** Row-dependent comparisons performed when [vcc] changes. */
-    private fun checkRow() {
-        if (vcc == regs[6]) vDisplay = false
-        if (vcc == regs[7] && !vsync) {
-            vsync = true
-            vsyncLines = 0
-            vsyncStarted = true
-        }
     }
 
     // ---- State -------------------------------------------------------------
 
     fun exportState(): IntArray = intArrayOf(
-        selectedRegister, hcc, vcc, rlc, vtac, if (inAdjust) 1 else 0, ma, maLine, maNextLine,
+        selectedRegister, hcc, vcc, rlc, vtac, if (inAdjust) 1 else 0, ma, maLine, maLine,
         if (hsync) 1 else 0, hsyncCount, if (vsync) 1 else 0, vsyncLines,
         if (hDisplay) 1 else 0, if (vDisplay) 1 else 0,
-    ) + regs
+    ) + regs + intArrayOf(if (lastLine) 1 else 0, if (lastRow) 1 else 0, vOffDelay)
 
     fun importState(s: IntArray) {
         require(s.size >= 15 + 18) { "Invalid CRTC state" }
         selectedRegister = s[0]; hcc = s[1]; vcc = s[2]; rlc = s[3]; vtac = s[4]; inAdjust = s[5] != 0
-        ma = s[6]; maLine = s[7]; maNextLine = s[8]
+        ma = s[6]; maLine = s[7]
         hsync = s[9] != 0; hsyncCount = s[10]; vsync = s[11] != 0; vsyncLines = s[12]
         hDisplay = s[13] != 0; vDisplay = s[14] != 0
         System.arraycopy(s, 15, regs, 0, 18)
+        if (s.size >= 15 + 18 + 3) {
+            lastLine = s[33] != 0; lastRow = s[34] != 0; vOffDelay = s[35]
+        } else {
+            // States saved before the latches existed: derive them from the counters.
+            lastLine = rlc == regs[9]; lastRow = vcc == regs[4]; vOffDelay = 0
+        }
         clearEvents()
     }
 

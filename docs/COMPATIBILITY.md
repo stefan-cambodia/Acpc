@@ -106,6 +106,22 @@ own at the first pass. What stopped the other 26, and what came of it:
 | Ghostbusters II, Shadow of the Beast | "Turn disk over", "Insert disc side 2" | second disc needed | not a fault |
 | Fire and Forget | black | the image is flagged `[b]` (bad dump) | not a fault |
 
+## Modern productions and the CRTC
+
+Twenty 2011-2020 productions archived on archive.org (Mojon Twins and
+usebox games, R-Type 128K, Sonic GX, Batman Group's Pinball Dreams and the
+Batman Forever megademo) test the video hardware harder than 1980s games.
+Nearly all ran at once. Pinball Dreams did not: its table and score panel
+are two CRTC frames per picture whose R4, R7 and R9 are rewritten while the
+beam runs, and the row counter overflowed to 127 where the real chip resets
+it, so VSYNC came every 243 and 974 lines and the picture broke up. The
+CRTC now latches its "last line" and "last row" comparisons the way the
+HD6845S and UM6845R do (see ARCHITECTURE.md). Pinball Dreams plays with a
+stable table, a Batman Forever part that showed noise now draws its red sky
+and perspective grid, and over the 423 discs and 38 cartridges of the
+sweeps only four pictures changed: the Fast Food Dizzy crack intro and the
+Mercs title lost their garbage, the other two are animation timing.
+
 ## Second sweep: 220 more discs
 
 A random sample of 220 other titles from the same collection (every genre:

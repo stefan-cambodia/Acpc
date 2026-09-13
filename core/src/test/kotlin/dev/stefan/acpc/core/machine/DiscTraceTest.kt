@@ -40,6 +40,8 @@ import java.io.File
  *  - `ACPC_TRACE_FDC`: print every disc controller command and result with
  *    the frame number and the PC.
  *  - `ACPC_TRACE_SWAP`: `second:file.dsk`, another disc put in drive A then.
+ *  - `ACPC_TRACE_SYNC_FRAMES`: `from:to` frame range during which the scan
+ *    line of every VSYNC and HSYNC count between VSYNCs are printed.
  *  - `ACPC_TRACE_OUT`: output directory for screenshots (default /tmp), one
  *    every `ACPC_TRACE_SHOT_EVERY` frames (default 250).
  *  - `ACPC_TRACE_464`: boot a CPC 464 instead.
@@ -156,6 +158,26 @@ class DiscTraceTest {
         val swapSpec = System.getenv("ACPC_TRACE_SWAP")
         val swapFrame = swapSpec?.substringBefore(':')?.toInt()?.times(50)
         val swapFile = swapSpec?.substringAfter(':')?.let { File(it) }
+        val syncRange = System.getenv("ACPC_TRACE_SYNC_FRAMES")?.split(":")?.map { it.toInt() }
+        if (syncRange != null) {
+            var lines = 0
+            var lastVsync = false
+            var lastHsync = false
+            m.instructionHook.let { inner ->
+                m.instructionHook = { mm ->
+                    inner?.invoke(mm)
+                    if (frames in syncRange[0]..syncRange[1]) {
+                        val c = mm.crtc
+                        if (c.hsync && !lastHsync) lines++
+                        if (c.vsync && !lastVsync) {
+                            println("f=$frames VSYNC after $lines lines, vcc=${c.vcc} R4=${c.regs[4]} R5=${c.regs[5]} R7=${c.regs[7]} R9=${c.regs[9]}")
+                            lines = 0
+                        }
+                        lastVsync = c.vsync; lastHsync = c.hsync
+                    }
+                }
+            }
+        }
         val maxFrames = (System.getenv("ACPC_TRACE_FRAMES") ?: "3000").toInt()
         val shotEvery = (System.getenv("ACPC_TRACE_SHOT_EVERY") ?: "250").toInt()
         while (frames < maxFrames && !stopped) {
