@@ -40,7 +40,10 @@ import dev.stefan.acpc.input.KeyMapper
 import dev.stefan.acpc.input.OverlayLayout
 import dev.stefan.acpc.input.VirtualKeyboardView
 import dev.stefan.acpc.settings.AppSettings
+import dev.stefan.acpc.storage.DiscSet
+import dev.stefan.acpc.storage.GameEntry
 import dev.stefan.acpc.storage.GameLibrary
+import dev.stefan.acpc.ui.library.DownloadFlow
 import dev.stefan.acpc.ui.settings.SettingsActivity
 import java.text.DateFormat
 import java.util.Date
@@ -462,7 +465,7 @@ class EmulatorActivity : AppCompatActivity() {
                     2 -> { s.resume(); showSystemKeyboard() }
                     3 -> showStateSlots(save = true)
                     4 -> showStateSlots(save = false)
-                    5 -> openDisk.launch(arrayOf("*/*"))
+                    5 -> changeDisc()
                     6 -> { s.flushDisk(library); s.emulator.ejectDisk(0); s.currentEntry = null; toast(R.string.toast_disk_ejected); s.resume() }
                     7 -> showDiskFiles()
                     8 -> { rewindTape(); s.resume() }
@@ -611,24 +614,66 @@ class EmulatorActivity : AppCompatActivity() {
         Thread {
             val result = runCatching { library.importFromUri(uri) }
             runOnUiThread {
-                result.onSuccess { entry ->
-                    try {
-                        s.flushDisk(library)
-                        val bytes = library.diskFile(entry).readBytes()
-                        s.insertDisk(bytes, entry.title, autoStart = false, resetFirst = false)
-                        s.currentEntry = entry
-                        entry.lastPlayed = System.currentTimeMillis()
-                        library.update(entry)
-                        toast(R.string.toast_disk_inserted)
-                    } catch (e: Exception) {
-                        Toast.makeText(this, getString(R.string.error_cannot_read_dsk), Toast.LENGTH_LONG).show()
-                    }
-                }.onFailure { e ->
+                result.onSuccess { entry -> insertEntry(entry) }.onFailure { e ->
                     Toast.makeText(this, e.message ?: getString(R.string.error_cannot_read_dsk), Toast.LENGTH_LONG).show()
+                    s.resume()
                 }
-                s.resume()
             }
         }.start()
+    }
+
+    /** Puts a library disc in drive A without resetting (a disc swap), then resumes. */
+    private fun insertEntry(entry: GameEntry) {
+        val s = session ?: return
+        try {
+            s.flushDisk(library)
+            val bytes = library.diskFile(entry).readBytes()
+            s.insertDisk(bytes, entry.title, autoStart = false, resetFirst = false)
+            s.currentEntry = entry
+            entry.lastPlayed = System.currentTimeMillis()
+            library.update(entry)
+            Toast.makeText(this, getString(R.string.toast_disk_inserted_named, entry.title), Toast.LENGTH_SHORT).show()
+        } catch (e: Exception) {
+            Toast.makeText(this, getString(R.string.error_cannot_read_dsk), Toast.LENGTH_LONG).show()
+        }
+        s.resume()
+    }
+
+    /**
+     * Changes the disc in drive A. For a game sold on several discs or sides
+     * ("(Disk 1 of 2)", "(Side A)") the other discs of the set are offered
+     * first: from the library, or downloaded from the server the game came
+     * from. Any other file can still be picked.
+     */
+    private fun changeDisc() {
+        val s = session ?: return
+        val current = s.currentEntry?.takeIf { it.isDisc }
+        val names = current?.let { DiscSet.siblings(it.title) }.orEmpty()
+        if (current == null || names.isEmpty()) {
+            openDisk.launch(arrayOf("*/*"))
+            return
+        }
+        val discs = library.all().filter { it.isDisc }
+        val labels = ArrayList<String>()
+        val actions = ArrayList<() -> Unit>()
+        for (name in names) {
+            val owned = discs.firstOrNull { it.title == name }
+            val url = current.sourceUrl?.let { DiscSet.siblingUrl(it, name) }
+            if (owned != null) {
+                labels += name
+                actions += { insertEntry(owned) }
+            } else if (url != null) {
+                labels += getString(R.string.change_disc_download, name)
+                actions += { DownloadFlow.start(this, library, url, onFailed = { s.resume() }) { entry -> insertEntry(entry) } }
+            }
+        }
+        labels += getString(R.string.change_disc_other)
+        actions += { openDisk.launch(arrayOf("*/*")) }
+        AlertDialog.Builder(this)
+            .setTitle(R.string.menu_insert_disk)
+            .setItems(labels.toTypedArray()) { _, which -> actions[which]() }
+            .setOnCancelListener { s.resume() }
+            .show()
     }
 
     private fun showDiskFiles() {

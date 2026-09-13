@@ -38,6 +38,7 @@ import java.io.File
  *    run, saved as `dump-<from>.bin`.
  *  - `ACPC_TRACE_FDC`: print every disc controller command and result with
  *    the frame number and the PC.
+ *  - `ACPC_TRACE_SWAP`: `second:file.dsk`, another disc put in drive A then.
  *  - `ACPC_TRACE_OUT`: output directory for screenshots (default /tmp).
  *  - `ACPC_TRACE_464`: boot a CPC 464 instead.
  */
@@ -149,10 +150,14 @@ class DiscTraceTest {
         if (System.getenv("ACPC_TRACE_FDC") != null) {
             m.fdc.traceListener = { line -> println("f=$frames pc=%04X FDC $line".format(m.cpu.pc)) }
         }
+        val swapSpec = System.getenv("ACPC_TRACE_SWAP")
+        val swapFrame = swapSpec?.substringBefore(':')?.toInt()?.times(50)
+        val swapFile = swapSpec?.substringAfter(':')?.let { File(it) }
         val maxFrames = (System.getenv("ACPC_TRACE_FRAMES") ?: "3000").toInt()
         while (frames < maxFrames && !stopped) {
             m.ioWriteHook = if (frames in videoFrames) videoLog else null
             rowLogging = frames in videoFrames
+            if (swapFrame == frames) swapFile?.let { emu.loadDisk(0, it.readBytes(), it.name); println("f=$frames disc swapped to ${it.name}") }
             keys[frames]?.let { text ->
                 if (text == "~") { emu.setJoystick(0, dev.stefan.acpc.core.joystick.JoystickButton.FIRE1, true) } else emu.typeText(text)
             }

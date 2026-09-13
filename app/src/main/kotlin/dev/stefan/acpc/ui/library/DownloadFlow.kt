@@ -20,7 +20,7 @@ import kotlinx.coroutines.withContext
  * returned immediately.
  */
 object DownloadFlow {
-    fun start(activity: AppCompatActivity, library: GameLibrary, url: String, onDone: (GameEntry) -> Unit) {
+    fun start(activity: AppCompatActivity, library: GameLibrary, url: String, onFailed: () -> Unit = {}, onDone: (GameEntry) -> Unit) {
         library.findBySourceUrl(url)?.let { cached ->
             Toast.makeText(activity, R.string.toast_cache_hit, Toast.LENGTH_SHORT).show()
             onDone(cached)
@@ -62,7 +62,10 @@ object DownloadFlow {
                         .setTitle(R.string.error_download_title)
                         .setMessage(e.message ?: activity.getString(R.string.error_download))
                         .setPositiveButton(android.R.string.ok, null)
+                        .setOnDismissListener { onFailed() }
                         .show()
+                } else {
+                    onFailed()
                 }
             }
         }

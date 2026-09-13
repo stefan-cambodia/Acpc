@@ -98,7 +98,9 @@
     <string name="menu_keyboard">CPC keyboard</string>
     <string name="menu_save_state">Save state</string>
     <string name="menu_load_state">Load state</string>
-    <string name="menu_insert_disk">Insert a DSK…</string>
+    <string name="menu_insert_disk">Change disc…</string>
+    <string name="change_disc_download">%1$s (download)</string>
+    <string name="change_disc_other">Other file…</string>
     <string name="menu_eject_disk">Eject disc</string>
     <string name="menu_disk_files">Files on disc / run</string>
     <string name="menu_poke">POKE (cheats)…</string>
@@ -129,7 +131,7 @@
     <string name="toast_state_saved">State saved</string>
     <string name="toast_state_loaded">State restored</string>
     <string name="toast_state_empty">This slot is empty</string>
-    <string name="toast_disk_inserted">Disc inserted in drive A</string>
+    <string name="toast_disk_inserted_named">%1$s in drive A</string>
     <string name="toast_disk_ejected">Disc ejected</string>
     <string name="toast_no_disk">No disc in drive A</string>
     <string name="toast_edit_overlay">Drag the controls. Open the menu again to finish.</string>

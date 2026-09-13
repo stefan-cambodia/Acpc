@@ -119,8 +119,14 @@ The menu button opens everything you can do without leaving the game.
 
   <img src="manual/disc_files.png" width="640" alt="Files on the disc">
 
-- **Insert a DSK…** swaps the disc for a multi-disc game, **Eject disc**
-  empties the drive.
+- **Change disc…** puts another disc in the drive without resetting. For a
+  game sold on several discs or sides, named like the collections do
+  ("Out Run (1988)(US Gold)(Disk 1 of 2)", "(Side A)"), it lists the other
+  discs of the set: the ones already in the library, and the ones it can
+  download from the server the game came from. **Other file…** picks any
+  file. Games rarely say which disc they want: when one stops on a black
+  screen or asks you to "turn the disc over", this is the item to use.
+  **Eject disc** empties the drive.
 - **POKE (cheats)…** applies POKEs while the game runs, for example infinite
   lives. Write them as `address,value`, separated by semicolons, in decimal
   or in hexadecimal with `&`.
