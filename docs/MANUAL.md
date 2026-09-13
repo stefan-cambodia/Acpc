@@ -164,7 +164,14 @@ stops when the tape reaches its end.
 <img src="manual/tape_loaded.png" width="640" alt="Chuckie Egg loaded, tape stopped">
 
 **Rewind the tape** in the menu takes it back to the start, which is what you
-need for a game that asks you to load its second part.
+need for a game that asks you to load its second part. When a game asks you to
+turn the tape over, **Change tape…** offers the other side of a tape named
+like the collections do ("Gemini_Wings__Side_A"), from the library or from the
+server the tape came from, and any other file.
+
+Tapes play on a machine without its disc system, as on a CPC 464 of the day:
+the disc ROM takes memory that some tape games count on (they stop at "Memory
+full" otherwise), and `RUN"` goes straight to the tape.
 
 ## 8. Cartridges: CPC Plus and GX4000
 

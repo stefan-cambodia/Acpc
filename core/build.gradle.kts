@@ -44,6 +44,7 @@ tasks.withType<Test>().configureEach {
     systemProperty("acpc.tapeDir", (project.findProperty("tapeDir") as String?) ?: "$home/.acpc/tapes")
     systemProperty("acpc.cartDir", (project.findProperty("cartDir") as String?) ?: "$home/.acpc/carts")
     (project.findProperty("cartSeconds") as String?)?.let { systemProperty("acpc.cartSeconds", it) }
+    (project.findProperty("tapeModel") as String?)?.let { systemProperty("acpc.tapeModel", it) }
     systemProperty("acpc.compatOut", (project.findProperty("compatOut") as String?) ?: "$home/.acpc/compat-out")
     testLogging {
         events("failed", "skipped")

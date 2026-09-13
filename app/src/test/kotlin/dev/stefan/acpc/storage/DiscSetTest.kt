@@ -1,7 +1,6 @@
 package dev.stefan.acpc.storage
 
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 
 class DiscSetTest {
@@ -27,12 +26,21 @@ class DiscSetTest {
     }
 
     @Test
-    fun `the sibling url sits next to the downloaded file`() {
+    fun `tape sides written without brackets`() {
+        assertEquals(listOf("Gemini Wings  Side B"), DiscSet.siblings("Gemini Wings  Side A"))
+        assertEquals(listOf("Barbarian-Le_Guerrier_Absolu__ENGLISH__Side_A"), DiscSet.siblings("Barbarian-Le_Guerrier_Absolu__ENGLISH__Side_B"))
+        assertEquals(emptyList<String>(), DiscSet.siblings("Sideways Scroller"))
+        assertEquals(emptyList<String>(), DiscSet.siblings("Side Arms"))
+    }
+
+    @Test
+    fun `the sibling urls sit next to the downloaded file`() {
         val url = "https://archive.org/download/Coll/Out%20Run%20%281988%29%28US%20Gold%29%28Disk%201%20of%202%29.zip"
         assertEquals(
-            "https://archive.org/download/Coll/Out%20Run%20%281988%29%28US%20Gold%29%28Disk%202%20of%202%29.zip",
-            DiscSet.siblingUrl(url, "Out Run (1988)(US Gold)(Disk 2 of 2)"),
+            listOf("https://archive.org/download/Coll/Out%20Run%20%281988%29%28US%20Gold%29%28Disk%202%20of%202%29.zip"),
+            DiscSet.siblingUrls(url),
         )
-        assertNull(DiscSet.siblingUrl("https://example.com/games/other.zip", "Out Run (1988)(US Gold)(Disk 2 of 2)"))
+        assertEquals(listOf("https://example.com/tapes/Gemini_Wings__Side_B.cdt"), DiscSet.siblingUrls("https://example.com/tapes/Gemini_Wings__Side_A.cdt"))
+        assertEquals(emptyList<String>(), DiscSet.siblingUrls("https://example.com/games/other.zip"))
     }
 }

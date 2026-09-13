@@ -111,6 +111,7 @@
     <string name="menu_save_state">Sauvegarder l\'état</string>
     <string name="menu_load_state">Charger un état</string>
     <string name="menu_insert_disk">Changer de disquette…</string>
+    <string name="menu_change_tape">Changer de cassette…</string>
     <string name="change_disc_download">%1$s (télécharger)</string>
     <string name="change_disc_other">Autre fichier…</string>
     <string name="menu_eject_disk">Éjecter la disquette</string>
@@ -144,6 +145,7 @@
     <string name="toast_state_loaded">État restauré</string>
     <string name="toast_state_empty">Ce slot est vide</string>
     <string name="toast_disk_inserted_named">%1$s dans le lecteur A</string>
+    <string name="toast_tape_inserted_named">%1$s dans le lecteur de cassettes</string>
     <string name="toast_disk_ejected">Disquette éjectée</string>
     <string name="toast_no_disk">Aucune disquette dans le lecteur A</string>
     <string name="toast_edit_overlay">Faites glisser les commandes. Rouvrez le menu pour terminer.</string>

@@ -127,7 +127,8 @@ The others:
 ## Tapes
 
 `TapeIntegrationTest` (slow) loads every `.cdt` in `~/.acpc/tapes` (Gradle
-property `tapeDir`) on a CPC 464: `|TAPE` when AMSDOS is present, `RUN"`, a
+property `tapeDir`) on a CPC 464 without disc ROM (Gradle property
+`tapeModel`, or `<name>.6128`; `<name>.ddi` adds AMSDOS): `RUN"`, a
 key for "Press PLAY then any key", then runs at full speed until the tape
 ends or the motor stays off for 30 s, and saves screenshots to
 `compatOut/tapes`. The idle limit has to be that long: BASIC loaders draw
@@ -141,6 +142,23 @@ CPC CDT Collection" on archive.org (UK originals):
 | Manic Miner (MAD re-release), Fruity Frank, Le Monde | title, speed menu, intro: the BASIC loader draws for 13 to 20 s with the motor off, then loads the rest |
 | Target Renegade side B | "Read error b": a level-data tape, not meant to be started with `RUN"` |
 | Gryzor | the Speedlock loader wipes memory at the end of its second block: defective image, see below |
+
+### A random 157 tapes
+
+157 first sides picked at random from the whole CDT collection (4675
+archives: games, compilations, educational software, 2018-2023 CPCRetroDev
+entries) loaded on a 464. All but seven reached a title, a menu or a prompt;
+six of them exposed two faults:
+
+| Tape | Symptom | Cause | Outcome |
+|------|---------|-------|---------|
+| Darkula 64, Stryfe, The Flintstones | nothing loads, "Found STRYFE block 2", "Read error b" | the image starts its first pilot tone within 0.4 s; the firmware lets the motor come up to speed for a while before it listens, and missed most or all of a short 2000-baud leader | images whose signal starts in the first 3 s get 3 s of leader tape in front, as a real cassette has; all three load |
+| Punchy (two releases), Football Manager 3 | "Memory full in 10", back to BASIC | the test machine had AMSDOS, whose buffers lower the memory ceiling | tapes run without the disc ROM, in the app as in the harness; Punchy asks for the monitor type, Football Manager 3 reaches its menu |
+| Nibbler (Mosaik) | "Syntax error in 1" | `ON BREAK CONT` is BASIC 1.1: a 6128 program | runs on the 6128 |
+
+The same 157 tapes on a 6128 without disc ROM (the app's default model
+for a tape) load as on the 464; compilations and 128K versions (Shadow
+Warriors 128K, Operation Thunderbolt) read further.
 
 ### Gryzor: a mistimed image
 

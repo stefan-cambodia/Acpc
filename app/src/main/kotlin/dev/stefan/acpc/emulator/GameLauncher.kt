@@ -5,6 +5,7 @@ import android.content.Intent
 import android.widget.Toast
 import dev.stefan.acpc.R
 import dev.stefan.acpc.core.api.EmulatorException
+import dev.stefan.acpc.core.api.RomSet
 import dev.stefan.acpc.core.asic.PlusProgram
 import dev.stefan.acpc.core.cartridge.Cartridge
 import dev.stefan.acpc.core.disk.DskFormat
@@ -73,7 +74,10 @@ object GameLauncher {
             return
         }
         val cartridge = gameCartridge ?: if (model.isPlus) romStore.loadSystemCartridge() else null
+        // A tape plays on a machine without its disc ROM, like a 464 before the DDI-1: AMSDOS
+        // takes memory that tape games count on (Punchy stops at "Memory full" with it).
         val roms = if (model.isPlus) null else (romStore.load(model) ?: return)
+            .let { if (entry?.isTape == true) RomSet(it.lowerRom, it.basicRom, null) else it }
         val session = try {
             EmulatorHolder.start(activity, model, settings.crtcType, roms, settings, cartridge)
         } catch (e: Exception) {

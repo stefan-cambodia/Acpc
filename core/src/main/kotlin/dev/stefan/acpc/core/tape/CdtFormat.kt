@@ -50,8 +50,19 @@ object CdtFormat {
             time += ms * MS
         }
 
-        fun build(): Image = Image(edges.copyOf(count), time, blockStarts.toLongArray(), false)
+        fun build(): Image {
+            // A cassette starts with leader tape that carries no signal. Images that start
+            // their first pilot tone at once (Darkula) lose it, and the firmware, which lets
+            // the motor come up to speed before it listens, missed a short 2000-baud leader.
+            val shift = if (count > 0 && edges[0] < LEADER_CYCLES) LEADER_CYCLES else 0L
+            for (i in 0 until count) edges[i] += shift
+            val starts = LongArray(blockStarts.size) { if (it == 0) 0L else blockStarts[it] + shift }
+            return Image(edges.copyOf(count), time + shift, starts, false)
+        }
     }
+
+    /** Silence put in front of an image whose signal starts in its first 3 seconds. */
+    const val LEADER_CYCLES = 3L * 4_000_000L
 
     private const val MS = 4000L
     private fun t(tzx: Int): Long = (tzx.toLong() * 8 + 3) / 7

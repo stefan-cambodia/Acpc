@@ -37,8 +37,12 @@ class TapeIntegrationTest {
         val name = file.nameWithoutExtension.replace(Regex("[^A-Za-z0-9._-]"), "_").take(40)
         val bytes = file.readBytes()
         val image = try { CdtFormat.parse(bytes) } catch (e: Exception) { return "$name: INVALID CDT (${e.message})" }
-        val model = if (File(tapeDir, "$name.6128").exists()) CpcModel.CPC6128 else CpcModel.CPC464
-        val roms = TestRoms.real(model)
+        // Gradle property tapeModel (default CPC464) or `<name>.6128` choose the machine.
+        val model = if (File(tapeDir, "$name.6128").exists()) CpcModel.CPC6128
+            else CpcModel.valueOf(System.getProperty("acpc.tapeModel") ?: "CPC464")
+        // Tapes run without the disc ROM, as the app does (AMSDOS takes memory that tape games
+        // expect: Punchy stops at "Memory full"), unless `<name>.ddi` asks for it.
+        val roms = TestRoms.real(model).let { if (!File(tapeDir, "$name.ddi").exists()) dev.stefan.acpc.core.api.RomSet(it.lowerRom, it.basicRom, null) else it }
         val emu = CpcEmulator.createMachine(model, roms, NullAudioSink())
         emu.insertTape(bytes, file.name)
         repeat(130) { emu.runFrame() }

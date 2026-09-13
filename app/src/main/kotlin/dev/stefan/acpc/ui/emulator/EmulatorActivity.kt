@@ -443,7 +443,7 @@ class EmulatorActivity : AppCompatActivity() {
             getString(R.string.menu_system_keyboard),
             getString(R.string.menu_save_state),
             getString(R.string.menu_load_state),
-            getString(R.string.menu_insert_disk),
+            getString(if (s.currentEntry?.isTape == true) R.string.menu_change_tape else R.string.menu_insert_disk),
             getString(R.string.menu_eject_disk),
             getString(R.string.menu_disk_files),
             getString(R.string.menu_rewind_tape),
@@ -622,17 +622,29 @@ class EmulatorActivity : AppCompatActivity() {
         }.start()
     }
 
-    /** Puts a library disc in drive A without resetting (a disc swap), then resumes. */
+    /**
+     * Puts a library disc in drive A, or a tape in the recorder, without
+     * resetting (a disc swap, a tape turned over), then resumes.
+     */
     private fun insertEntry(entry: GameEntry) {
         val s = session ?: return
         try {
-            s.flushDisk(library)
             val bytes = library.diskFile(entry).readBytes()
-            s.insertDisk(bytes, entry.title, autoStart = false, resetFirst = false)
+            if (entry.isTape) {
+                s.insertTape(bytes, entry.title, autoStart = false, resetFirst = false)
+                Toast.makeText(this, getString(R.string.toast_tape_inserted_named, entry.title), Toast.LENGTH_SHORT).show()
+            } else if (entry.isDisc) {
+                s.flushDisk(library)
+                s.insertDisk(bytes, entry.title, autoStart = false, resetFirst = false)
+                Toast.makeText(this, getString(R.string.toast_disk_inserted_named, entry.title), Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this, getString(R.string.error_cannot_read_dsk), Toast.LENGTH_LONG).show()
+                s.resume()
+                return
+            }
             s.currentEntry = entry
             entry.lastPlayed = System.currentTimeMillis()
             library.update(entry)
-            Toast.makeText(this, getString(R.string.toast_disk_inserted_named, entry.title), Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
             Toast.makeText(this, getString(R.string.error_cannot_read_dsk), Toast.LENGTH_LONG).show()
         }
@@ -640,25 +652,27 @@ class EmulatorActivity : AppCompatActivity() {
     }
 
     /**
-     * Changes the disc in drive A. For a game sold on several discs or sides
-     * ("(Disk 1 of 2)", "(Side A)") the other discs of the set are offered
-     * first: from the library, or downloaded from the server the game came
-     * from. Any other file can still be picked.
+     * Changes the disc in drive A, or the tape in a tape session. For a game
+     * sold on several discs or sides ("(Disk 1 of 2)", "(Side A)", "Side_A")
+     * the other members of the set are offered first: from the library, or
+     * downloaded from the server the game came from. Any other file can still
+     * be picked.
      */
     private fun changeDisc() {
         val s = session ?: return
-        val current = s.currentEntry?.takeIf { it.isDisc }
+        val current = s.currentEntry?.takeIf { it.isDisc || it.isTape }
         val names = current?.let { DiscSet.siblings(it.title) }.orEmpty()
         if (current == null || names.isEmpty()) {
             openDisk.launch(arrayOf("*/*"))
             return
         }
-        val discs = library.all().filter { it.isDisc }
+        val sameKind = library.all().filter { it.kind == current.kind }
+        val urls = current.sourceUrl?.let { DiscSet.siblingUrls(it) }?.takeIf { it.size == names.size }
         val labels = ArrayList<String>()
         val actions = ArrayList<() -> Unit>()
-        for (name in names) {
-            val owned = discs.firstOrNull { it.title == name }
-            val url = current.sourceUrl?.let { DiscSet.siblingUrl(it, name) }
+        for ((i, name) in names.withIndex()) {
+            val owned = sameKind.firstOrNull { it.title == name }
+            val url = urls?.get(i)
             if (owned != null) {
                 labels += name
                 actions += { insertEntry(owned) }
@@ -670,7 +684,7 @@ class EmulatorActivity : AppCompatActivity() {
         labels += getString(R.string.change_disc_other)
         actions += { openDisk.launch(arrayOf("*/*")) }
         AlertDialog.Builder(this)
-            .setTitle(R.string.menu_insert_disk)
+            .setTitle(if (current.isTape) R.string.menu_change_tape else R.string.menu_insert_disk)
             .setItems(labels.toTypedArray()) { _, which -> actions[which]() }
             .setOnCancelListener { s.resume() }
             .show()
