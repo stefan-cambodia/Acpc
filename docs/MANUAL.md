@@ -87,8 +87,16 @@ and adds it to the library.
 ## 4. Playing
 
 Tap a game to start it. The disc is inserted, the machine boots and the
-program is started for you (`RUN"…`), so a game reaches its title screen on
-its own.
+program is started for you, so a game reaches its title screen on its own.
+The app reads the disc catalogue and the header of each file to find the
+loader: a BASIC program or a binary with an entry address, preferably named
+like the game (`RUN"DISC`, `RUN"BJII.BIN`); a CP/M game boots with `|CPM`.
+If it ever picks the wrong file, **Files on disc / run** in the menu starts
+another one.
+
+The machine is chosen for the game too: the default model from the settings,
+a GX4000 for a cartridge, a 6128 Plus for a disc or tape written for the Plus,
+unless you set **CPC model for this game**.
 
 <img src="manual/game_playing.png" width="640" alt="Bomb Jack running with the touch controls">
 
@@ -114,8 +122,9 @@ The menu button opens everything you can do without leaving the game.
 
   <img src="manual/save_state.png" width="640" alt="Save state slots">
 
-- **Files on disc / run** lists the AMSDOS catalogue and runs any file on it,
-  which is how you start the second program on a compilation disc.
+- **Files on disc / run** lists the AMSDOS catalogue, programs first, and
+  runs any file on it, which is how you start the second program on a
+  compilation disc.
 
   <img src="manual/disc_files.png" width="640" alt="Files on the disc">
 
@@ -241,6 +250,15 @@ ROMs and import it, or pick another model in the settings.
 between 40 and 90 seconds to load at the speed of a real drive. Turn on
 **Fast disc drive** if you would rather not wait.
 
+**A game stops after its menu, says "START TAPE" or asks to turn the disc
+over** — it wants its second disc or side. Open **Change disc…** (or
+**Change tape…**) in the menu and pick it; games named "(Disk 1 of 2)" or
+"Side A" get the other part offered directly.
+
+**A game goes back to BASIC right after starting, or says "Bad command"** —
+the disc holds several programs and the loader is not the obvious one. Use
+**Files on disc / run** and try the BASIC files first.
+
 **A game ignores the fire button** — some games want a key instead of the
 joystick. Open the CPC keyboard and press the key the game asks for, or
 remap the on-screen buttons through **Touch controls profile**.
@@ -249,4 +267,10 @@ remap the on-screen buttons through **Touch controls profile**.
 then has a bigger buffer to fill.
 
 **A game misbehaves on the 6128** — try the CPC 464 for an old tape-era
-game, through **CPC model for this game** so the choice sticks to it.
+game, through **CPC model for this game** so the choice sticks to it. A
+program written for the 6128 Plus is started on the Plus by itself once
+`system.cpr` is imported.
+
+**A demo or a late game shows a torn or rolling picture** — some of them
+behave differently on the two CRTC variants; try the other one in the
+machine settings.

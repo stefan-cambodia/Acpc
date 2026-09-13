@@ -1,5 +1,22 @@
 # Compatibility log
 
+## Summary
+
+| Batch | Titles | Result |
+|-------|--------|--------|
+| [First discs](#first-discs) | 30 well-known games | all reach a title, a menu or their loader; gameplay checked in 90 s runs |
+| [Wide sweep](#wide-sweep-203-discs) | 203 discs, 1984-1999 hits | 177 at once; the rest traced: auto-start, CP/M boot, CRTC, monitor, DSK reader fixes, or a second disc needed |
+| [Second sweep](#second-sweep-220-more-discs) | 220 random discs | 207 at once; disc controller seeks, 6128 RAM banking, file headers, Plus detection fixes |
+| [Modern productions](#modern-productions-and-the-crtc) | 20 releases from 2011-2020 | all but two run; the CRTC rewrite fixed Pinball Dreams and a Batman Forever part; Sonic GX still crashes |
+| [Tapes](#tapes) | 28 UK originals, then 157 random tapes | all load but a mistimed Gryzor image, a data side and one 6128-only program (fine on the 6128); leader tape and "no disc ROM" fixes |
+| [Cartridges](#cartridges-cpc-plus-gx4000) | 38 images: all 26 GX4000 games, homebrew, Plus firmware | all 26 GX4000 games play; No Exit needed RAM at &C000 at power-on |
+
+Every change to the emulation was checked against all of the pictures of
+the batches above: a fix had to leave the other games' screenshots
+unchanged, or change them for the better.
+
+## First discs
+
 Results of the batch harness (`CompatibilityRunTest`: boot a CPC 6128, insert
 the disc, type the AMSDOS auto-start command, run 40 s, dump screenshots).
 "State at 40 s" is what the screen showed when the run stopped. A game still
