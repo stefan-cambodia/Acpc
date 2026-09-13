@@ -181,8 +181,10 @@ Games that say "press fire 1 on joypad 1" mean the large button.
 
 If you also import the 6128 Plus system cartridge as `system.cpr`, you can
 choose **Amstrad CPC 6128 Plus** as the machine and run ordinary discs and
-tapes on it. That is how a disc program written for the Plus, such as Jet Set
-Willy+, gets its ASIC.
+tapes on it. A disc or tape written for the Plus, such as Jet Set Willy+ or
+Fluff, is recognised (it carries the code that unlocks the Plus chip) and
+starts on the 6128 Plus by itself; without the cartridge, a message says to
+import it.
 
 ## 9. Settings
 

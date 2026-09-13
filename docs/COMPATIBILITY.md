@@ -44,7 +44,7 @@ Run with:
 | Boulder Dash (bdash) | "Loading..." | long load |
 | Columns CPC | menu | |
 | Cyber Power | title, "press space" | |
-| Jet Set Willy+ (jswplus) | crashes after loading on a 6128 | CPC Plus program (ASIC registers, RMR2): boot it on the 6128 Plus model, where it runs (see Cartridges below) |
+| Jet Set Willy+ (jswplus) | crashes after loading on a 6128 | CPC Plus program (ASIC registers, RMR2): runs on the 6128 Plus model, which the launcher now picks by itself (see Cartridges below) |
 | Robotron 2084 | title screen | |
 | Sean McManus collection 2024 | menu | |
 | Space: Above and Beyond | title | |
@@ -105,6 +105,24 @@ own at the first pass. What stopped the other 26, and what came of it:
 | Hero Quest - Return of the Witchlord | "Cannot find .EMS file" | an expansion that needs the Hero Quest disc | not a fault |
 | Ghostbusters II, Shadow of the Beast | "Turn disk over", "Insert disc side 2" | second disc needed | not a fault |
 | Fire and Forget | black | the image is flagged `[b]` (bad dump) | not a fault |
+
+## Second sweep: 220 more discs
+
+A random sample of 220 other titles from the same collection (every genre:
+text adventures, sports, puzzles, budget games, French and Spanish
+releases, a few 1990s homebrews) went through the same 90 s run. The
+first pass reached a title, a menu, a prompt or gameplay for 205 of them.
+The others:
+
+| Title | Symptom | Cause | Outcome |
+|-------|---------|-------|---------|
+| The Krypton Factor | CP/M boot hangs | the boot loader repeats SEEK and SENSE INTERRUPT STATUS until the seek is reported done; each SEEK restarted the seek delay | heads step on the controller's own step-rate clock; boots to the contestant screen |
+| International 3D Tennis | black after the title on a 6128 | the 128K loader writes RAM configurations with the expansion bank bits set; they picked a nonexistent bank | the 6128 ignores those bits as the real decoder does; menu with the 128K season mode |
+| Winter Games | "File type error" | auto-start ran `RECORDS.BIN`, a header of type &F1 | headers with a non-zero version nibble are not programs; `DISK.BIN` runs, ski jump reached |
+| Fer & Flamme | "Improper argument in 20" | auto-start ran `DEF1.BAS`, a sub-program | a loader named after the title's initials (`F&F.BAS`) is preferred; title menu reached |
+| Fluff | black screen, crash | a CPC Plus game (unlocks the ASIC) | runs on the 6128 Plus; the launcher now picks it for discs carrying the ASIC unlock sequence |
+| Arctic Fox | "Syntax error in 60141" | the first bytes of `ARTICFOX.BAS` are corrupt in this dump | not a fault |
+| Passagers du Vent 2, Exit, Ice Guardian, Histoire d'Or, Dick Tracy, Maffia, Zelda | "insert side B", long loads | second disc or long loading | not a fault |
 
 ## Tapes
 
