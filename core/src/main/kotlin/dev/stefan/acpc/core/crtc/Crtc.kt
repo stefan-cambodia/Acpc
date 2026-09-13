@@ -191,14 +191,18 @@ class Crtc(val type: CrtcType) {
     fun advance() {
         clearEvents()
         ma = (ma + 1) and 0x3FFF
-        hcc = (hcc + 1) and 0xFF
-        if (hcc > regs[0]) {
+        // The 6845 compares its counters for equality: a counter already past a
+        // register that was just lowered runs on to its overflow (255 characters,
+        // 127 rows, 31 lines) and wraps. Split screen tricks ("ruptures") rely on it.
+        if (hcc == regs[0]) {
+            hcc = 0
             endOfLine()
+        } else {
+            hcc = (hcc + 1) and 0xFF
         }
     }
 
     private fun endOfLine() {
-        hcc = 0
         hDisplay = true
         if (vsync) {
             vsyncLines++
@@ -208,8 +212,8 @@ class Crtc(val type: CrtcType) {
             }
         }
         if (inAdjust) {
-            vtac++
-            if (vtac >= regs[5]) {
+            vtac = (vtac + 1) and 0x1F
+            if (vtac == regs[5]) {
                 startFrame()
             } else {
                 rlc = (rlc + 1) and 0x1F
@@ -218,13 +222,14 @@ class Crtc(val type: CrtcType) {
             }
             return
         }
-        if (rlc >= regs[9]) {
+        if (rlc == regs[9]) {
             // End of the character row.
             rlc = 0
             maLine = maNextLine
             ma = maLine
+            val lastRow = vcc == regs[4]
             vcc = (vcc + 1) and 0x7F
-            if (vcc > regs[4]) {
+            if (lastRow) {
                 if (regs[5] != 0) {
                     inAdjust = true
                     vtac = 0
@@ -235,7 +240,7 @@ class Crtc(val type: CrtcType) {
             }
             checkRow()
         } else {
-            rlc++
+            rlc = (rlc + 1) and 0x1F
             ma = maLine
         }
         applySplit()

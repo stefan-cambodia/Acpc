@@ -23,11 +23,19 @@ import java.io.File
  *  - `ACPC_TRACE_STOP_PCS`: comma-separated hex PCs; the first time one is
  *    reached after `ACPC_TRACE_ARM_FRAME` (default 150) the trace stops and
  *    the last `ACPC_TRACE_RING` (default 4000) instructions are printed with
- *    their registers and the memory configuration.
+ *    their registers and the memory configuration. `*` stops at the first
+ *    instruction of the arm frame (to see what a stuck program loops on).
  *  - `ACPC_TRACE_JUMPS`: size of a second ring that keeps only control
  *    transfers (an instruction that does not follow the previous one), printed
  *    at the stop as `from -> to`; it reaches much further back than the
  *    instruction ring (default 400).
+ *  - `ACPC_TRACE_VIDEO_FRAMES`: comma-separated frame numbers during which every
+ *    CRTC and Gate Array write is printed with the CRTC counters (VCC, RLC,
+ *    HCC) and the PC.
+ *  - `ACPC_TRACE_KEYS`: `second:text` pairs separated by `;`, typed at those
+ *    seconds after the command (`\n` for RETURN, `~` for the joystick fire).
+ *  - `ACPC_TRACE_DUMP`: `from:len` in hex, memory as mapped at the end of the
+ *    run, saved as `dump-<from>.bin`.
  *  - `ACPC_TRACE_OUT`: output directory for screenshots (default /tmp).
  *  - `ACPC_TRACE_464`: boot a CPC 464 instead.
  */
@@ -55,10 +63,15 @@ class DiscTraceTest {
         val ring = IntArray(ringSize * 10)
         var ri = 0
         var filled = 0
-        val stopPcs = (System.getenv("ACPC_TRACE_STOP_PCS") ?: "").split(",").filter { it.isNotEmpty() }.map { it.toInt(16) }.toSet()
+        val stopPcs = (System.getenv("ACPC_TRACE_STOP_PCS") ?: "").split(",").filter { it.isNotEmpty() && it != "*" }.map { it.toInt(16) }.toSet()
         val armFrame = (System.getenv("ACPC_TRACE_ARM_FRAME") ?: "150").toInt()
+        val stopAnywhere = System.getenv("ACPC_TRACE_STOP_PCS") == "*"
         var frames = 0
         var stopped = false
+        // Row changes and sync edges during ACPC_TRACE_VIDEO_FRAMES, to follow split and "rupture" screens.
+        var rowLogging = false
+        var lastVcc = -1
+        var lastVsync = false
         val jumpSize = (System.getenv("ACPC_TRACE_JUMPS") ?: "400").toInt()
         val jumps = IntArray(jumpSize * 4)
         var ji = 0
@@ -74,6 +87,13 @@ class DiscTraceTest {
                 if (jumpsFilled < jumpSize) jumpsFilled++
             }
             prevPc = c.pc
+            if (rowLogging) {
+                val crtc = mm.crtc
+                if (crtc.vcc != lastVcc || crtc.vsync != lastVsync) {
+                    println("f=$frames vcc=%3d rlc=%2d vsync=%b R4=%d R6=%d R7=%d R9=%d ma=%04X".format(crtc.vcc, crtc.rlc, crtc.vsync, crtc.regs[4], crtc.regs[6], crtc.regs[7], crtc.regs[9], crtc.ma))
+                    lastVcc = crtc.vcc; lastVsync = crtc.vsync
+                }
+            }
             val mem = mm.memory
             val o = ri * 10
             ring[o] = c.pc; ring[o + 1] = c.a; ring[o + 2] = c.f; ring[o + 3] = c.bc; ring[o + 4] = c.de
@@ -81,7 +101,7 @@ class DiscTraceTest {
             ring[o + 9] = (if (mem.lowerRomEnabled) 0x10000 else 0) or (if (mem.upperRomEnabled) 0x20000 else 0) or (mem.upperRomNumber shl 8) or mem.ramConfig
             ri = (ri + 1) % ringSize
             if (filled < ringSize) filled++
-            if (!stopped && frames >= armFrame && c.pc in stopPcs) {
+            if (!stopped && frames >= armFrame && (stopAnywhere || c.pc in stopPcs)) {
                 stopped = true
                 println("stop at frame $frames pc=%04X, last $jumpsFilled control transfers:".format(c.pc))
                 val jb = StringBuilder()
@@ -112,12 +132,34 @@ class DiscTraceTest {
             }
         }
 
+        val videoFrames = (System.getenv("ACPC_TRACE_VIDEO_FRAMES") ?: "").split(",").filter { it.isNotEmpty() }.map { it.trim().toInt() }.toSet()
+        val keys = (System.getenv("ACPC_TRACE_KEYS") ?: "").split(";").filter { it.contains(':') }
+            .associate { it.substringBefore(':').toInt() * 50 to it.substringAfter(':').replace("\\n", "\n") }
+        val crtc = m.crtc
+        val videoLog = { port: Int, value: Int ->
+            val where = "f=$frames vcc=%3d rlc=%2d hcc=%3d pc=%04X".format(crtc.vcc, crtc.rlc, crtc.hcc, m.cpu.pc)
+            if (port and 0x8000 == 0) println("$where GA %02X".format(value))
+            if (port and 0x4000 == 0) when ((port ushr 8) and 3) {
+                0 -> println("$where CRTC select %d".format(value and 0x1F))
+                1 -> println("$where CRTC R%d=%d (&%02X)".format(crtc.selectedRegister, value, value))
+            }
+        }
         val maxFrames = (System.getenv("ACPC_TRACE_FRAMES") ?: "3000").toInt()
         while (frames < maxFrames && !stopped) {
+            m.ioWriteHook = if (frames in videoFrames) videoLog else null
+            rowLogging = frames in videoFrames
+            keys[frames]?.let { text ->
+                if (text == "~") { emu.setJoystick(0, dev.stefan.acpc.core.joystick.JoystickButton.FIRE1, true) } else emu.typeText(text)
+            }
+            if (keys.containsKey(frames - 10) && keys[frames - 10] == "~") emu.setJoystick(0, dev.stefan.acpc.core.joystick.JoystickButton.FIRE1, false)
             emu.runFrame(); frames++
             if (frames % 250 == 0) CompatibilityRunTest.savePng(emu.runFrame(), File(outDir, "disctrace-$frames.png"))
         }
         m.instructionHook = null
+        m.ioWriteHook = null
+        System.getenv("ACPC_TRACE_DUMP")?.split(":")?.map { it.toInt(16) }?.let { (from, len) ->
+            File(outDir, "dump-%04X.bin".format(from)).writeBytes(ByteArray(len) { m.memory.read((from + it) and 0xFFFF).toByte() })
+        }
         val cpu = m.cpu
         println("frames=$frames regs: a=%02X bc=%04X de=%04X hl=%04X sp=%04X pc=%04X ix=%04X iy=%04X".format(cpu.a, cpu.bc, cpu.de, cpu.hl, cpu.sp, cpu.pc, cpu.ix, cpu.iy))
         println(ScreenReader.readText(m).joinToString("\n"))

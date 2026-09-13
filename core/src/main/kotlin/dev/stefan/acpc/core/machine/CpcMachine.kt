@@ -72,6 +72,9 @@ class CpcMachine(
      */
     @Volatile var instructionHook: ((CpcMachine) -> Unit)? = null
 
+    /** Debugging aid: called before every OUT is decoded, with the port and the value. */
+    @Volatile var ioWriteHook: ((port: Int, value: Int) -> Unit)? = null
+
     private var keyboardLine = 0
     var cassetteMotor = false
         private set
@@ -227,6 +230,7 @@ class CpcMachine(
 
     override fun writeIo(port: Int, value: Int) {
         syncVideo()
+        ioWriteHook?.invoke(port, value)
         if (port and 0x8000 == 0) {
             // Register writes to the AY go through the PPI, but the Gate Array
             // colour/mode writes have an audible side effect only via the CPU

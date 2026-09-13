@@ -94,6 +94,8 @@ class CompatibilityRunTest {
         var nudgeCycles = 0
         var staticSeconds = 0
         var lastNudgeSecond = -100
+        var lastAccess = -1L
+        var lastAccessSecond = 0
         val sent = ArrayList<String>()
         var frame: VideoFrame = emu.runFrame()
         val pcSamples = HashSet<Int>()
@@ -115,7 +117,11 @@ class CompatibilityRunTest {
             if (h != lastHash) { changes++; staticSeconds = 0 } else staticSeconds++
             lastHash = h
             if (second == 8 && extra != null) emu.typeText(extra)
-            val discIdle = !emu.machine.fdc.motorOn
+            // Idle: motor off, or no seek or transfer for three seconds (some games
+            // leave the motor running while they wait for a key).
+            val access = emu.machine.fdc.accessCount
+            if (access != lastAccess) { lastAccess = access; lastAccessSecond = second }
+            val discIdle = !emu.machine.fdc.motorOn || second - lastAccessSecond >= 3
             // Start playing once the game no longer needs nudges: list exhausted, or
             // the picture has been moving on its own for ten seconds (gameplay / attract).
             if (play && !playing && second > 15 && discIdle && (nudgeCycles > 0 || second - maxOf(lastNudgeSecond, 10) >= 10)) {

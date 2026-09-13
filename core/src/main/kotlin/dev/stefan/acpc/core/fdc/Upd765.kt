@@ -33,6 +33,10 @@ class Upd765 {
     var motorOn = false
         private set
 
+    /** Commands that moved the head or transferred data since power-on (status polls excluded). */
+    var accessCount = 0L
+        private set
+
     /** When true, rotational and seek delays are removed (fast loading). */
     @Volatile var fastMode = false
 
@@ -255,6 +259,7 @@ class Upd765 {
 
     private fun executeCommand() {
         val code = command[0] and 0x1F
+        if (code != 0x03 && code != 0x04 && code != 0x08) accessCount++
         when (code) {
             0x03 -> {
                 stepRateMs = 16 - ((command[1] ushr 4) and 0x0F)

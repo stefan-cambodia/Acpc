@@ -111,7 +111,8 @@ class GateArray(
         lineAsserted = false
         interruptSink.setInterrupt(false)
         rasterX = 0
-        rasterY = 0
+        // Ready to lock on the first VSYNC.
+        rasterY = MIN_SYNC_LINES
         scanLine = 0
         displayOnLine = false
         raster.pixels.fill(CpcPalette.BLACK)
@@ -190,9 +191,14 @@ class GateArray(
             if (displayOnLine) endDisplayLine()
             rasterX = 0
             rasterY++
+            // No sync accepted for too long: the monitor's vertical oscillator runs free.
+            if (rasterY >= FREE_RUN_LINES) completeFrame()
         }
         if (crtc.vsyncStarted) {
-            completeFrame()
+            // The monitor only retraces on a pulse that comes near the end of its sweep;
+            // an early one (programs that alternate two CRTC frames, each with its own
+            // VSYNC, such as Thunder Blade) is ignored.
+            if (rasterY >= MIN_SYNC_LINES) completeFrame()
             vsyncHsyncDelay = 2
         }
         if (crtc.frameStarted) scanLine = 0
@@ -383,13 +389,14 @@ class GateArray(
     }
 
     private fun completeFrame() {
+        // Lines that were not reached this frame (short frames) are cleared so
+        // stale content does not linger at the bottom of the picture.
+        if (rasterY < RASTER_LINES) raster.pixels.fill(CpcPalette.BLACK, maxOf(0, rasterY + 1) * RASTER_WIDTH, raster.pixels.size)
         frameCounter++
         frame.copyFrom(raster)
         frame.frameNumber = frameCounter
         frameReady = true
         rasterY = 0
-        // Lines that were not reached this frame (short frames) are cleared so
-        // stale content does not linger at the bottom of the picture.
     }
 
     /** Returns the last completed frame and clears [frameReady]. */
@@ -433,6 +440,14 @@ class GateArray(
         const val RASTER_US = 64
         const val RASTER_WIDTH = RASTER_US * 16
         const val RASTER_LINES = 312
+
+        /**
+         * Vertical hold of the monitor: a VSYNC is obeyed only after this many
+         * lines of sweep (about 60 Hz), and without one the picture flies back
+         * on its own after [FREE_RUN_LINES] (about 46 Hz).
+         */
+        const val MIN_SYNC_LINES = 262
+        const val FREE_RUN_LINES = 340
 
         /** Visible window: 48 µs (768 pixels) × 272 lines, centred on the default firmware screen. */
         const val VISIBLE_X = 14 * 16
