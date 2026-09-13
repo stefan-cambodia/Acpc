@@ -17,7 +17,8 @@ import java.io.File
  * Run with `./gradlew :core:test --rerun -PslowTests --tests '*DiscTraceTest*'`.
  *
  * Environment variables:
- *  - `ACPC_TRACE_DISC`: the disc to boot (required).
+ *  - `ACPC_TRACE_DISC`: the disc to boot, or `ACPC_TRACE_CART`: a cartridge
+ *    to boot on a GX4000 (one of them is required).
  *  - `ACPC_TRACE_CMD`: command typed after boot (default: the auto-start command).
  *  - `ACPC_TRACE_FRAMES`: frames to run after the command (default 3000).
  *  - `ACPC_TRACE_STOP_PCS`: comma-separated hex PCs; the first time one is
@@ -42,6 +43,9 @@ import java.io.File
  *  - `ACPC_TRACE_SWAP`: `second:file.dsk`, another disc put in drive A then.
  *  - `ACPC_TRACE_SYNC_FRAMES`: `from:to` frame range during which the scan
  *    line of every VSYNC and HSYNC count between VSYNCs are printed.
+ *  - `ACPC_TRACE_WATCH`: `address:length` in hex; every change of those bytes
+ *    (as the CPU sees them) is printed with the PC of the instruction that
+ *    made it, from `ACPC_TRACE_ARM_FRAME` on.
  *  - `ACPC_TRACE_OUT`: output directory for screenshots (default /tmp), one
  *    every `ACPC_TRACE_SHOT_EVERY` frames (default 250).
  *  - `ACPC_TRACE_464`: boot a CPC 464 instead.
@@ -52,18 +56,24 @@ class DiscTraceTest {
 
     @Test
     fun trace() {
-        val path = System.getenv("ACPC_TRACE_DISC") ?: return
-        val model = if (System.getenv("ACPC_TRACE_464") != null) CpcModel.CPC464 else CpcModel.CPC6128
-        assumeTrue(TestRoms.realAvailable(model))
+        val cartPath = System.getenv("ACPC_TRACE_CART")
+        val path = System.getenv("ACPC_TRACE_DISC") ?: cartPath ?: return
         val file = File(path)
-        val emu = CpcEmulator.createMachine(model, TestRoms.real(model), NullAudioSink())
+        val emu = if (cartPath != null) {
+            CpcEmulator.createMachine(CpcModel.GX4000, null, NullAudioSink(), cartridge = dev.stefan.acpc.core.cartridge.Cartridge.parse(file.readBytes(), file.name))
+        } else {
+            val model = if (System.getenv("ACPC_TRACE_464") != null) CpcModel.CPC464 else CpcModel.CPC6128
+            assumeTrue(TestRoms.realAvailable(model))
+            CpcEmulator.createMachine(model, TestRoms.real(model), NullAudioSink()).also { e ->
+                val bytes = file.readBytes()
+                e.loadDisk(0, bytes, file.name)
+                repeat(130) { e.runFrame() }
+                val command = System.getenv("ACPC_TRACE_CMD")?.replace("\\n", "\n")
+                    ?: AmsdosCatalog.autoStartCommand(DskFormat.read(bytes, file.name))!!
+                e.typeText(command)
+            }
+        }
         val m = emu.machine
-        val bytes = file.readBytes()
-        emu.loadDisk(0, bytes, file.name)
-        repeat(130) { emu.runFrame() }
-        val command = System.getenv("ACPC_TRACE_CMD")?.replace("\\n", "\n")
-            ?: AmsdosCatalog.autoStartCommand(DskFormat.read(bytes, file.name))!!
-        emu.typeText(command)
 
         val ringSize = (System.getenv("ACPC_TRACE_RING") ?: "4000").toInt()
         // Per instruction: pc, a, f, bc, de, hl, ix, sp, iff1, memory configuration.
@@ -84,14 +94,25 @@ class DiscTraceTest {
         var ji = 0
         var jumpsFilled = 0
         var prevPc = -1
+        val watch = System.getenv("ACPC_TRACE_WATCH")?.split(":")?.map { it.toInt(16) }
+        val watched = IntArray(watch?.get(1) ?: 0) { -1 }
         m.instructionHook = { mm ->
             val c = mm.cpu
             val delta = c.pc - prevPc
             if (prevPc >= 0 && (delta < 0 || delta > 4)) {
                 jumps[ji * 4] = prevPc; jumps[ji * 4 + 1] = c.pc; jumps[ji * 4 + 2] = frames
-                jumps[ji * 4 + 3] = (if (mm.memory.lowerRomEnabled) 1 else 0) or (if (mm.memory.upperRomEnabled) 2 else 0)
+                jumps[ji * 4 + 3] = (if (mm.memory.lowerRomEnabled) 1 else 0) or (if (mm.memory.upperRomEnabled) 2 else 0) or (mm.memory.upperRomNumber shl 8)
                 ji = (ji + 1) % jumpSize
                 if (jumpsFilled < jumpSize) jumpsFilled++
+            }
+            if (watch != null && frames >= armFrame) {
+                for (k in 0 until watch[1]) {
+                    val v = mm.memory.read((watch[0] + k) and 0xFFFF)
+                    if (v != watched[k]) {
+                        if (watched[k] >= 0) println("f=$frames watch %04X: %02X -> %02X after pc=%04X (sp=%04X)".format(watch[0] + k, watched[k], v, prevPc, c.sp))
+                        watched[k] = v
+                    }
+                }
             }
             prevPc = c.pc
             if (rowLogging) {
@@ -116,7 +137,7 @@ class DiscTraceTest {
                 for (k in 0 until jumpsFilled) {
                     val e = ((ji - jumpsFilled + k + jumpSize * 2) % jumpSize) * 4
                     val roms = jumps[e + 3]
-                    jb.append("%04X->%04X@%d%s%s ".format(jumps[e], jumps[e + 1], jumps[e + 2], if (roms and 1 != 0) "L" else "", if (roms and 2 != 0) "U" else ""))
+                    jb.append("%04X->%04X@%d%s%s ".format(jumps[e], jumps[e + 1], jumps[e + 2], if (roms and 1 != 0) "L" else "", if (roms and 2 != 0) "U${roms ushr 8}" else ""))
                     if (k % 8 == 7) jb.append('\n')
                 }
                 println(jb)

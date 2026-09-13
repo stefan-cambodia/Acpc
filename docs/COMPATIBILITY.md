@@ -122,6 +122,15 @@ and perspective grid, and over the 423 discs and 38 cartridges of the
 sweeps only four pictures changed: the Fast Food Dizzy crack intro and the
 Mercs title lost their garbage, the other two are animation timing.
 
+| Production | State |
+|------------|-------|
+| Cheril of the Bosque, Nanako, Uwol 2, Cheman, Phantomas 2.0, Profanation 2, Operation Alexandra, Golden Tail, Magica, Space Pest Control, The Dawn of Kernel (disc and GX4000 cartridge), The Return of Traxtor, R-Type 128K | title or gameplay |
+| Pinball Dreams | table and score panel, scrolling (after the CRTC change) |
+| Batman Forever | runs through its parts from the startup screen (press a key) to the end scroller |
+| Battro | an intro that returns to BASIC when a key is pressed, as written |
+| Sonic GX (GX4000) | title with parallax, then a crash at 17 s: a RET pops a table pointer left on the stack by its interrupt-driven main loop. Probably interrupt timing (the ASIC raster interrupt fires at the end of HSYNC here); open |
+| The Sword of Ianna (512 KB ROM) | black: a ROM for a ROM board, not a cartridge |
+
 ## Second sweep: 220 more discs
 
 A random sample of 220 other titles from the same collection (every genre:
