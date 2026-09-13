@@ -94,6 +94,7 @@
 
     <!-- ROMs -->
     <string name="roms_missing_toast">ROM manquante pour le %1$s : importez vos fichiers ROM.</string>
+    <string name="toast_plus_program_no_cartridge">Ce programme est écrit pour le CPC Plus : importez la cartouche system.cpr pour le lancer sur un 6128 Plus.</string>
     <string name="roms_missing_banner">ROMs Amstrad absentes : appuyez sur « ROMs » pour les importer.</string>
     <string name="roms_explanation">L\'émulateur a besoin des ROMs d\'origine de l\'Amstrad, qui ne sont pas fournies avec l\'application. Importez-les depuis votre stockage : elles sont reconnues automatiquement par leur contenu.\n\nFichiers attendus (32 Ko : OS + BASIC ; 16 Ko : AMSDOS ; cartouche système .cpr du 6128 Plus) :</string>
     <string name="roms_required_for_disc">indispensable pour les disquettes</string>

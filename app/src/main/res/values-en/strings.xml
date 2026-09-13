@@ -80,6 +80,7 @@
     <string name="error_start_emulator">Cannot start the emulator: %1$s</string>
     <string name="error_state">Unreadable save state: %1$s</string>
     <string name="roms_missing_toast">Missing ROM for the %1$s: import your ROM files.</string>
+    <string name="toast_plus_program_no_cartridge">This program is written for the CPC Plus: import the system.cpr cartridge to run it on a 6128 Plus.</string>
     <string name="roms_missing_banner">Amstrad ROMs missing: tap “ROMs” to import them.</string>
     <string name="roms_explanation">The emulator needs the original Amstrad ROMs, which are not bundled with the app. Import them from your storage: they are recognised automatically by their content.\n\nExpected files (32 KB: OS + BASIC; 16 KB: AMSDOS; the 6128 Plus system cartridge as .cpr):</string>
     <string name="roms_required_for_disc">required for discs</string>

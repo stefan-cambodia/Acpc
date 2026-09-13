@@ -5,7 +5,9 @@ import android.content.Intent
 import android.widget.Toast
 import dev.stefan.acpc.R
 import dev.stefan.acpc.core.api.EmulatorException
+import dev.stefan.acpc.core.asic.PlusProgram
 import dev.stefan.acpc.core.cartridge.Cartridge
+import dev.stefan.acpc.core.disk.DskFormat
 import dev.stefan.acpc.core.machine.CpcModel
 import dev.stefan.acpc.core.snapshot.SnaFormat
 import dev.stefan.acpc.settings.AppSettings
@@ -37,9 +39,24 @@ object GameLauncher {
         val snapshotModel = if (entry != null && entry.isSnapshot && bytes != null) {
             runCatching { SnaFormat.info(bytes) }.getOrNull()?.let { info -> info.model ?: if (info.ramKb > 64) CpcModel.CPC6128 else null }
         } else null
+        // A disc or tape that unlocks the ASIC is a CPC Plus program (Jet Set Willy+, Fluff):
+        // it gets a 6128 Plus unless the user chose a model for it.
+        val plusProgram = entry != null && bytes != null && entry.modelOverride == null && (entry.isDisc || entry.isTape) &&
+            runCatching {
+                if (entry.isDisc) PlusProgram.containsUnlock(DskFormat.read(bytes, entry.title)) else PlusProgram.containsUnlock(bytes)
+            }.getOrDefault(false)
+        val plusProgramModel = when {
+            !plusProgram || settings.model.isPlus -> null
+            romStore.canBoot(CpcModel.CPC6128PLUS) -> CpcModel.CPC6128PLUS
+            else -> {
+                Toast.makeText(activity, activity.getString(R.string.toast_plus_program_no_cartridge), Toast.LENGTH_LONG).show()
+                null
+            }
+        }
         var model = entry?.modelOverride?.let { runCatching { CpcModel.valueOf(it) }.getOrNull() }
             ?: snapshotModel
             ?: gameCartridge?.let { if (it.isSystemCartridge) CpcModel.CPC6128PLUS else CpcModel.GX4000 }
+            ?: plusProgramModel
             ?: settings.model
         if (gameCartridge != null && !model.isPlus) model = CpcModel.GX4000
         if (gameCartridge == null && model == CpcModel.GX4000) {
