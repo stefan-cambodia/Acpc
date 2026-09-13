@@ -639,7 +639,8 @@ class EmulatorActivity : AppCompatActivity() {
             s.resume()
             return
         }
-        val files = AmsdosCatalog.list(disk)
+        // Programs first: data files and later loader stages cannot be started with RUN".
+        val files = AmsdosCatalog.list(disk).sortedByDescending { it.runnable }
         val labels = files.map { it.toString() }.toTypedArray()
         AlertDialog.Builder(this)
             .setTitle(getString(R.string.dialog_disk_files, disk.name))

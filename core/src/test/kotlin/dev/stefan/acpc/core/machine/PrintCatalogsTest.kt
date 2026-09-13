@@ -19,7 +19,14 @@ class PrintCatalogsTest {
             val image = DskFormat.read(d.readBytes(), d.name)
             val files = AmsdosCatalog.list(image)
             println("${d.name}: format=${AmsdosCatalog.detectFormat(image)} autostart=${AmsdosCatalog.autoStartCommand(image)?.trim()}")
-            println("   " + files.joinToString(" "))
+            for (f in files) {
+                val h = f.header
+                val kind = when {
+                    h == null -> if (f.asciiBasic) "ascii basic" else if (f.contentKnown) "no header" else "unreadable"
+                    else -> "type=%02X load=%04X exec=%04X len=%04X".format(h.type, h.loadAddress, h.execAddress, h.length)
+                }
+                println("   ${f.fileName} ${f.sizeKb}K $kind${if (f.runnable) " runnable" else ""}")
+            }
         }
     }
 }
