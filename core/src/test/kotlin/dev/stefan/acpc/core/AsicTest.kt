@@ -104,6 +104,7 @@ class AsicTest {
         assertEquals(5, CpcMemory.cartridgePageForRom(133))
         assertEquals(31, CpcMemory.cartridgePageForRom(159))
         val m = boot().machine
+        m.out(0xDF00, 0)
         assertEquals(0x11, m.memory.read(0xC000))       // ROM 0 = page 1 (BASIC on a system cartridge)
         m.out(0xDF00, 7)
         assertEquals(0x33, m.memory.read(0xC000))

@@ -190,6 +190,8 @@ Results with the cartridges from the archive.org GX4000 collections:
 | Burnin' Rubber (GX4000 cartridge) | in the game (race start) | sprites, DMA music, RMR2 paging |
 | Switchblade | animated title, then sprites | sprites, PRI |
 | Relentless, zblast SD (homebrew) | menus | none: plain CPC programs on a cartridge |
+| Barbarian II, Copter 271, Crazy Cars 2, Dick Tracy, The Enforcer, Fire and Forget 2, Mystical, Operation Thunderbolt, Panza Kick Boxing, Pro Tennis Tour, Skeet Shoot, Super Pinball Magic, Tennis Cup 2, Tintin on the Moon, Wild Streets, World of Sports | in the game or at its menu (raw `.bin` dumps of the full 26-cartridge GX4000 set) | sprites, PRI and split in most, DMA sound in Copter 271 |
+| No Exit | title with its mirrored logo, then the fight | calls a subroutine before setting its stack pointer: needs RAM at &C000 until the first ROM select (see below) |
 | System cartridge (Caprice32 `system.cpr`) | "f1 Amstrad BASIC / f2 Burnin' Rubber" menu, BASIC 1.1 after f1 | 6128 Plus firmware |
 | Parados 1.2+ (French firmware replacement) | BASIC prompt | 6128 Plus firmware; its French keyboard layout makes the auto-typed commands come out wrong (`RUN2DISC:BQS`) |
 
@@ -198,7 +200,13 @@ disc when a `<name>.plus` file names the cartridge (default `system.cpr` in
 `cartDir`); it presses f1 at the boot menu before typing the command. Jet
 Set Willy+ then loads and reaches its first room, "The Bathroom".
 
-Two details found while bringing these up:
+Details found while bringing these up:
+
+- A Plus shows RAM at &C000 from power-on until the first write to the ROM
+  select port. No Exit's first CALL runs with the stack pointer still at
+  &FFFF and returns through RAM there (the cartridge is known not to start
+  on a Plus with a ROM board, whose ROM would answer); World of Sports
+  selects a ROM before jumping into it, so both run.
 
 - The keyboard must stay readable when AY register 7 sets port A as an
   output (Pang leaves the mixer at &FF and polls the joystick line); the AY

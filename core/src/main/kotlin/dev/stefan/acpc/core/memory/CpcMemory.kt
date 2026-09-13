@@ -60,6 +60,16 @@ class CpcMemory(
     var lowerRomEnabled: Boolean = true
         private set
 
+    /**
+     * False on a Plus from power-on until the first write to the ROM select
+     * port: until then no cartridge page answers at &C000 and RAM shows
+     * through. No Exit calls a subroutine before it sets its stack pointer
+     * (still &FFFF) and needs its return address back from RAM; World of
+     * Sports selects a ROM before jumping into it. With a ROM board plugged
+     * in, No Exit famously fails on a real Plus.
+     */
+    private var romSelectWritten = false
+
     /** Gate Array RMR bit 3 (0 = upper ROM enabled). */
     var upperRomEnabled: Boolean = true
         private set
@@ -91,6 +101,7 @@ class CpcMemory(
 
     fun reset() {
         upperRomNumber = 0
+        romSelectWritten = false
         lowerRomEnabled = true
         upperRomEnabled = true
         ramConfig = 0
@@ -107,6 +118,7 @@ class CpcMemory(
 
     fun selectUpperRom(number: Int) {
         upperRomNumber = number and 0xFF
+        romSelectWritten = true
         remap()
     }
 
@@ -184,7 +196,7 @@ class CpcMemory(
                 readSource[block] = cart.page(rmr2 and 7)
                 readOffset[block] = 0
             }
-            if (upperRomEnabled) {
+            if (upperRomEnabled && romSelectWritten) {
                 readSource[3] = cart.page(cartridgePageForRom(upperRomNumber))
                 readOffset[3] = 0
             }
@@ -223,6 +235,7 @@ class CpcMemory(
 
     fun restoreConfig(upperRom: Int, lowerEnabled: Boolean, upperEnabled: Boolean, ramConfig: Int) {
         this.upperRomNumber = upperRom and 0xFF
+        this.romSelectWritten = true
         this.lowerRomEnabled = lowerEnabled
         this.upperRomEnabled = upperEnabled
         this.ramConfig = ramConfig and 0x3F

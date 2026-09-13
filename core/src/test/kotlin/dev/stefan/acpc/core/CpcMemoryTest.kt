@@ -89,6 +89,18 @@ class CpcMemoryTest {
     }
 
     @Test
+    fun `a Plus shows RAM at C000 until a ROM is selected`() {
+        val pages = ByteArray(4 * dev.stefan.acpc.core.cartridge.Cartridge.PAGE_SIZE) { (it / dev.stefan.acpc.core.cartridge.Cartridge.PAGE_SIZE + 0x10).toByte() }
+        val cart = dev.stefan.acpc.core.cartridge.Cartridge.parse(pages, "game.bin")
+        val mem = CpcMemory(CpcModel.GX4000, null, cart)
+        mem.write(0xFFFE, 0x3D)
+        assertEquals(0x3D, mem.read(0xFFFE))       // No Exit's return address, stack still at &FFFF
+        assertEquals(0x10, mem.read(0x0000))       // page 0 as the lower ROM
+        mem.selectUpperRom(0)
+        assertEquals(0x11, mem.read(0xFFFE))       // ROM 0 is cartridge page 1
+    }
+
+    @Test
     fun `464 ignores RAM configuration`() {
         val mem = CpcMemory(CpcModel.CPC464, TestRoms.synthetic())
         mem.setRomEnables(lowerEnabled = false, upperEnabled = false)
