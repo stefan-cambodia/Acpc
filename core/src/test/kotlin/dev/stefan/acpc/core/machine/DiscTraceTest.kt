@@ -25,6 +25,7 @@ import java.io.File
  *    the last `ACPC_TRACE_RING` (default 4000) instructions are printed with
  *    their registers and the memory configuration. `*` stops at the first
  *    instruction of the arm frame (to see what a stuck program loops on).
+ *    The whole RAM at that moment is saved as `ram-at-stop.bin`.
  *  - `ACPC_TRACE_JUMPS`: size of a second ring that keeps only control
  *    transfers (an instruction that does not follow the previous one), printed
  *    at the stop as `from -> to`; it reaches much further back than the
@@ -39,7 +40,8 @@ import java.io.File
  *  - `ACPC_TRACE_FDC`: print every disc controller command and result with
  *    the frame number and the PC.
  *  - `ACPC_TRACE_SWAP`: `second:file.dsk`, another disc put in drive A then.
- *  - `ACPC_TRACE_OUT`: output directory for screenshots (default /tmp).
+ *  - `ACPC_TRACE_OUT`: output directory for screenshots (default /tmp), one
+ *    every `ACPC_TRACE_SHOT_EVERY` frames (default 250).
  *  - `ACPC_TRACE_464`: boot a CPC 464 instead.
  */
 @Tag("slow")
@@ -106,6 +108,7 @@ class DiscTraceTest {
             if (filled < ringSize) filled++
             if (!stopped && frames >= armFrame && (stopAnywhere || c.pc in stopPcs)) {
                 stopped = true
+                File(outDir, "ram-at-stop.bin").writeBytes(mm.memory.ram.copyOf())
                 println("stop at frame $frames pc=%04X, last $jumpsFilled control transfers:".format(c.pc))
                 val jb = StringBuilder()
                 for (k in 0 until jumpsFilled) {
@@ -154,6 +157,7 @@ class DiscTraceTest {
         val swapFrame = swapSpec?.substringBefore(':')?.toInt()?.times(50)
         val swapFile = swapSpec?.substringAfter(':')?.let { File(it) }
         val maxFrames = (System.getenv("ACPC_TRACE_FRAMES") ?: "3000").toInt()
+        val shotEvery = (System.getenv("ACPC_TRACE_SHOT_EVERY") ?: "250").toInt()
         while (frames < maxFrames && !stopped) {
             m.ioWriteHook = if (frames in videoFrames) videoLog else null
             rowLogging = frames in videoFrames
@@ -163,7 +167,7 @@ class DiscTraceTest {
             }
             if (keys.containsKey(frames - 10) && keys[frames - 10] == "~") emu.setJoystick(0, dev.stefan.acpc.core.joystick.JoystickButton.FIRE1, false)
             emu.runFrame(); frames++
-            if (frames % 250 == 0) CompatibilityRunTest.savePng(emu.runFrame(), File(outDir, "disctrace-$frames.png"))
+            if (frames % shotEvery == 0) CompatibilityRunTest.savePng(emu.runFrame(), File(outDir, "disctrace-$frames.png"))
         }
         m.instructionHook = null
         m.ioWriteHook = null
